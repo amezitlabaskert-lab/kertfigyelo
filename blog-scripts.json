@@ -1,19 +1,19 @@
 [
   {
-  "id": "enyhe-fagy",
-  "name": "🧊 Gyenge fagy várható",
-  "type": "info",
-  "trigger": { "temp_min": 0 },
-  "seasons": [
-    { "start": "03-01", "end": "05-20" },
-    { "start": "09-15", "end": "11-30" }
-  ],
-  "plants": [
-    "Kerti árvácska (Viola x wittrockiana)",
-    "Európai ciprus (Cupressus sempervirens)"
-  ],
-  "message": "Szezonális talajmenti fagy! Figyelj a friss hajtásokra és az érzékeny palántákra."
-}
+    "id": "enyhe-fagy",
+    "name": "🧊 Gyenge fagy várható",
+    "type": "info",
+    "trigger": { "temp_min": 0 },
+    "seasons": [
+      { "start": "03-01", "end": "05-20" },
+      { "start": "09-15", "end": "11-30" }
+    ],
+    "plants": [
+      "Kerti árvácska (Viola x wittrockiana)",
+      "Európai ciprus (Cupressus sempervirens)"
+    ],
+    "message": "Szezonális talajmenti fagy! Figyelj a friss hajtásokra és az érzékeny palántákra."
+  },
   {
     "id": "eros-fagy-riado",
     "name": "❄️ Erős fagyok várhatók",
@@ -43,6 +43,3 @@
     "message": "Ideális idő lemosó permetezéshez."
   }
 ]
-
-
-
