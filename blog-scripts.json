@@ -1,11 +1,15 @@
 [
   {
-    "id": "kemeny-fagy-egzotik",
-    "name": "Fagyvédelem (Egzotikusok)",
+    "id": "eros-fagy-riado",
+    "name": "❄️ Erős fagyok várhatók",
     "type": "alert",
-    "trigger": { "temp_min": 15 },
-    "plants": ["Datolyaszilva (Diospyros kaki)", "Közönséges füge (Ficus carica)"],
-    "message": "Kritikus hideg! Takard be a datolyaszilvát és a fügét!"
+    "trigger": { "temp_min": -12 },
+    "plants": [
+      "Datolyaszilva (Diospyros kaki)", 
+      "Közönséges füge (Ficus carica)",
+      "Európai ciprus (Cupressus sempervirens)"
+    ],
+    "message": "Erős fagyok jönnek, fagyvédelem szükséges!."
   },
   {
     "id": "lemoso-permetezes",
@@ -21,7 +25,6 @@
       "Japánszilva (Prunus salicina)",
       "Házi szilva (Prunus domestica)"
     ],
-    "message": "Ideális idő a gyümölcsfák lemosó permetezéséhez!"
+    "message": "Ideális idő lemosó permetezéshez."
   }
 ]
-
