@@ -3,7 +3,7 @@
     "id": "eros-fagy-riado",
     "name": "❄️ Erős fagyok várhatók",
     "type": "alert",
-    "trigger": { "temp_min": -12 },
+    "trigger": { "temp_min": 12 },
     "plants": [
       "Datolyaszilva (Diospyros kaki)", 
       "Közönséges füge (Ficus carica)",
@@ -28,4 +28,5 @@
     "message": "Ideális idő lemosó permetezéshez."
   }
 ]
+
 
