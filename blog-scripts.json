@@ -3,68 +3,85 @@
     "id": "enyhe-fagy",
     "name": "🧊 Gyenge fagy várható",
     "type": "info",
-    "trigger": { "temp_min": 0 },
-    "seasons": [
-      { "start": "03-01", "end": "05-20" },
-      { "start": "09-15", "end": "11-30" }
-    ],
-    "plants": [
-    ],
+    "conditions": { "temp_below": 0 },
+    "seasons": [{ "start": "03-01", "end": "05-20" }, { "start": "09-15", "end": "11-30" }],
     "message": "Szezonális talajmenti fagy! Figyelj a friss hajtásokra és az érzékeny palántákra."
   },
   {
     "id": "eros-fagy-riado",
     "name": "❄️ Erős fagyok várhatók",
     "type": "alert",
-    "trigger": { "temp_min": -12 },
+    "conditions": { "temp_below": -10 },
     "plants": [
       "Datolyaszilva (Diospyros kaki)", 
-      "Közönséges füge (Ficus carica)",
-      "Európai ciprus (Cupressus sempervirens)",
+      "Közönséges füge (Ficus carica)", 
+      "Európai ciprus (Cupressus sempervirens)", 
       "Kínai selyemmirtusz (Lagerstroemia indica)"
     ],
-    "message": "Erős fagyok jönnek, fagyvédelem szükséges!"
+    "message": "Erős fagyok jönnek, az érzékenyebb növényeknek fagyvédelem szükséges!"
+  },
+  {
+    "id": "tavaszi-metszes",
+    "name": "✂️ Metszési időszak",
+    "type": "window",
+    "seasons": [{ "start": "02-01", "end": "03-31" }],
+    "conditions": { "temp_above": 2, "rain_max": 0 },
+    "message": "Fagymentes, száraz idő: ideális a fás szárú növények, gyümölcsfák és a szőlő metszéséhez."
+  },
+  {
+    "id": "fukarbantartas-pro",
+    "name": "🌱 Profi fűkarbantartás",
+    "type": "window",
+    "seasons": [{ "start": "03-20", "end": "05-15" }],
+    "conditions": { 
+      "soil_temp_above": 10, 
+      "rain_max": 0, 
+      "wind_max": 15 
+    },
+    "plants": [
+      "Réti perje (Poa pratensis)", 
+      "Angolperje (Lolium perenne)", 
+      "Nádképű csenkesz (Festuca arundinacea)"
+    ],
+    "message": "A talaj hőmérséklete 6 cm mélyen elérte a 10°C-ot. Ez a tökéletes pillanat a gyepszellőztetéshez és tápanyagpótláshoz!"
   },
   {
     "id": "lemoso-permetezes",
-    "name": "Lemosó permetezés",
+    "name": "💦 Lemosó permetezés",
     "type": "window",
-    "season": { "start": "02-15", "end": "03-31" },
-    "conditions": { "temp_min": 5, "wind_max": 12, "rain_max": 0 },
-    "plants": [
-      "Közönséges alma (Malus domestica)", 
-      "Cseresznye (Prunus avium)", 
-      "Közönséges kajszi (Prunus armeniaca)",
-      "Nektarin (Prunus persica var. nucipersica)",
-      "Japánszilva (Prunus salicina)",
-      "Házi szilva (Prunus domestica)"
-    ],
-    "message": "Ideális idő lemosó permetezéshez."
+    "seasons": [{ "start": "02-15", "end": "03-31" }],
+    "conditions": { "temp_above": 5, "wind_max": 12, "rain_max": 0 },
+    "plants": ["Haszon- és dísznövények"],
+    "message": "A lemosó permetezés segít az áttelelő kártevők és gombák ellen az egész kertben. Lehetőleg szélcsendes, felhős időt válassz a perzselés elkerülése érdekében. "
+  },
+{
+    "id": "leveltetu-megfigyeles",
+    "name": "🪲 Levéltetvek (Aphidoidea) vs. Katicák",
+    "type": "info",
+    "seasons": [{ "start": "04-01", "end": "05-20" }],
+    "conditions": { "temp_above": 12 },
+    "plants": ["Rózsa (Rosa)", "Közönséges gyümölcsfák", "Díszcserjék"],
+    "message": "A levéltetvek már ébredeznek, de a katicák még nem aktívak! Ha hűvös marad az idő, elszaporodhatnak a természetes ellenségeik nélkül. Vizsgáld a hajtásvégeket!"
   },
   {
-    "id": "tafrina-riado",
-    "name": "🍄 Tafrina-veszély",
-    "type": "window",
-    "season": { "start": "03-01", "end": "04-15" },
-    "conditions": { "temp_min": 4, "rain_min": 1 },
-    "plants": [
-      "Nektarin (Prunus persica var. nucipersica)",
-      "Közönséges őszibarack (Prunus persica)"
-    ],
-    "message": "Hűvös, csapadékos idő: Tafrina fertőzés veszélye! Védekezés szükséges a rügypattanás után."
-  },
-  {
-    "id": "monilia-riado",
-    "name": "🍄 Monília-veszély",
-    "type": "window",
-    "season": { "start": "03-15", "end": "04-30" },
-    "conditions": { "temp_min": 5, "rain_min": 1 },
-    "plants": [
-      "Közönséges kajszi (Prunus armeniaca)",
-      "Meggy (Prunus cerasus)",
-      "Japánszilva (Prunus salicina)"
-    ],
-    "message": "Csapadékos idő virágzáskor: Monília-fertőzés veszélye! Figyelj a virágfertőző moníliára."
+    "id": "katica-aktivalodas",
+    "name": "🐞 Katicabogarak (Coccinellidae) ébredése",
+    "type": "info",
+    "seasons": [{ "start": "04-01", "end": "06-30" }],
+    "conditions": { "temp_above": 15 },
+    "message": "Megérkezett a tartós meleg, a katicák is aktivizálódnak! Most már segítenek kordában tartani a levéltetveket."
   }
+  {
+    "id": "boroka-diszbogar-rajzas",
+    "name": "🪲 Boróka-tarka díszbogár (Lamprodila festiva)",
+    "type": "alert",
+    "seasons": [{ "start": "06-01", "end": "07-31" }],
+    "conditions": { "temp_above": 22 },
+    "plants": [
+      "Közönséges boróka (Juniperus communis)", 
+      "Nyugati tuja (Thuja occidentalis)", 
+      "Leila-ciprus (Cupressocyparis leylandii)"
+    ],
+    "message": "A tartós meleg kedvez a díszbogarak rajzásának. Ebben az időszakban javasolt az érintett növények megfigyelése."
+  },
 ]
-
