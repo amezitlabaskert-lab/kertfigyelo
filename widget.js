@@ -1,49 +1,68 @@
 (async function() {
     const esc = str => String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
     
-    const fontLink = document.createElement('link');
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap';
-    fontLink.rel = 'stylesheet';
-    document.head.appendChild(fontLink);
+    // Betűtípusok
+    if (!document.querySelector('link[href*="Plus+Jakarta+Sans"]')) {
+        const fontLink = document.createElement('link');
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap';
+        fontLink.rel = 'stylesheet';
+        document.head.appendChild(fontLink);
+    }
 
     const styleSheet = document.createElement("style");
     styleSheet.textContent = `
-        #smart-garden-widget { font-family: 'Plus Jakarta Sans', sans-serif; color: #334155; max-width: 320px; margin: 0 auto; }
-        .garden-main-card { background: #ffffff; padding: 30px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border-radius: 8px; }
-        .garden-title { font-family: 'Dancing Script', cursive; font-size: 45px; text-align: center; margin-bottom: 25px; color: #1e293b; }
-        .section-title { font-size: 13px; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
-        .alert-header { color: #b91c1c; margin-top: 10px; }
+        #smart-garden-widget { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #334155; 
+            z-index: 9999;
+        }
+        /* Asztali nézet: lebegő oldalsáv bal oldalt */
+        @media (min-width: 1250px) {
+            #smart-garden-widget {
+                position: fixed;
+                left: 20px;
+                top: 150px;
+                width: 300px;
+            }
+        }
+        /* Mobil/Szűk nézet: marad a folyamban */
+        @media (max-width: 1249px) {
+            #smart-garden-widget {
+                width: 90%;
+                max-width: 320px;
+                margin: 20px auto;
+            }
+        }
+        .garden-main-card { 
+            background: #ffffff; 
+            padding: 30px; 
+            border: 1px solid #f1f5f9; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); 
+            border-radius: 12px; 
+        }
+        .garden-title { font-family: 'Dancing Script', cursive; font-size: 42px; text-align: center; margin-bottom: 20px; color: #1e293b; line-height: 1; }
+        .section-title { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+        .alert-header { color: #b91c1c; }
         .info-header { color: #6691b3; margin-top: 25px; }
-        .card-container { position: relative; padding-left: 20px; margin-bottom: 20px; min-height: 80px; }
+        .card-container { position: relative; padding-left: 20px; margin-bottom: 15px; min-height: 90px; }
         .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 2px; }
-        .event-name { font-size: 18px; font-weight: 800; margin-bottom: 4px; color: #1e293b; }
-        .event-range { font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .event-msg { font-size: 13px; line-height: 1.5; color: #475569; }
-        .garden-footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 25px; line-height: 1.6; border-top: 1px solid #f1f5f9; padding-top: 15px; }
-        .loc-btn { border: 1px solid #346080; background: none; padding: 10px; font-size: 9px; font-weight: 800; cursor: pointer; width: 100%; margin-bottom: 20px; letter-spacing: 1px; color: #346080; }
+        .event-name { font-size: 17px; font-weight: 800; margin-bottom: 2px; color: #1e293b; }
+        .event-range { font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; }
+        .event-msg { font-size: 12.5px; line-height: 1.5; color: #475569; }
+        .garden-footer { text-align: center; font-size: 9px; color: #cbd5e1; margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+        .loc-btn { border: 1px solid #346080; background: none; padding: 8px; font-size: 9px; font-weight: 800; cursor: pointer; width: 100%; margin-bottom: 15px; color: #346080; border-radius: 4px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
     `;
     document.head.appendChild(styleSheet);
 
-    // Biztonságos tároló, ami akkor is működik, ha a böngésző blokkolja a LocalStorage-ot
     function createSafeStorage() {
         const memoryStore = {};
         try {
-            localStorage.setItem('test', '1');
-            localStorage.removeItem('test');
-            return {
-                getItem: (k) => localStorage.getItem(k),
-                setItem: (k, v) => localStorage.setItem(k, v),
-                removeItem: (k) => localStorage.removeItem(k)
-            };
+            const t = 't'; localStorage.setItem(t, t); localStorage.removeItem(t);
+            return { getItem: (k) => localStorage.getItem(k), setItem: (k, v) => localStorage.setItem(k, v), removeItem: (k) => localStorage.removeItem(k) };
         } catch(e) {
-            console.warn("Storage tiltva, memória alapú mód aktív.");
-            return {
-                getItem: (k) => memoryStore[k] || null,
-                setItem: (k, v) => { memoryStore[k] = v; },
-                removeItem: (k) => { delete memoryStore[k]; }
-            };
+            return { getItem: (k) => memoryStore[k] || null, setItem: (k, v) => { memoryStore[k] = v; }, removeItem: (k) => { delete memoryStore[k]; } };
         }
     }
     const storage = createSafeStorage();
@@ -62,24 +81,19 @@
     }
 
     function checkSustained(weather, index, key, threshold, operator, days) {
-        if (!weather || !weather.daily || !weather.daily[key]) return false;
-        if (index < days - 1) return false;
-        
+        if (!weather?.daily?.[key] || index < days - 1) return false;
         let anySatisfied = false;
         const ops = operator.split('-');
         const isAny = ops.includes('any');
         const baseOp = ops[0];
-
         for (let i = 0; i < days; i++) {
             let val = weather.daily[key][index - i];
-            if (val === undefined || val === null) return false;
-            
+            if (val === undefined) return false;
             let currentSatisfied = false;
             if (baseOp === 'above' && val >= threshold) currentSatisfied = true;
             if (baseOp === 'below' && val <= threshold) currentSatisfied = true;
             if (baseOp === 'max' && val <= threshold) currentSatisfied = true;
             if (baseOp === 'min' && val >= threshold) currentSatisfied = true;
-            
             if (!currentSatisfied && !isAny) return false;
             if (currentSatisfied) anySatisfied = true;
         }
@@ -89,26 +103,16 @@
     function checkDay(rule, weather, date, i) {
         const seasons = rule.seasons || (rule.season ? [rule.season] : null);
         if (seasons && !seasons.some(s => isInSeason(date, s.start, s.end))) return false;
-        
-        const c = rule.conditions || {};
-        const days = c.days_min || 1;
-
+        const c = rule.conditions || {}, days = c.days_min || 1;
         if (c.temp_below !== undefined && !checkSustained(weather, i, 'temperature_2m_min', c.temp_below, 'below', days)) return false;
         if (c.temp_above !== undefined && !checkSustained(weather, i, 'temperature_2m_max', c.temp_above, 'above', days)) return false;
-        
-        // Szél kezelése: megnézzük melyik kulcs létezik az API válaszban
         const windKey = weather.daily.wind_gusts_10m_max !== undefined ? 'wind_gusts_10m_max' : 'wind_speed_10m_max';
-        
         if (c.wind_min_any !== undefined) { if (!checkSustained(weather, i, windKey, c.wind_min_any, 'min-any', days)) return false; }
         else if (c.wind_min !== undefined && !checkSustained(weather, i, windKey, c.wind_min, 'min', days)) return false;
         if (c.wind_max !== undefined && !checkSustained(weather, i, windKey, c.wind_max, 'max', days)) return false;
-        
         if (c.rain_min_any !== undefined) { if (!checkSustained(weather, i, 'precipitation_sum', c.rain_min_any, 'min-any', days)) return false; }
-        else if (c.rain_min !== undefined) {
-            if (!weather.daily.precipitation_sum || weather.daily.precipitation_sum[i] < c.rain_min) return false;
-        }
+        else if (c.rain_min !== undefined && (weather.daily.precipitation_sum?.[i] || 0) < c.rain_min) return false;
         if (c.rain_max !== undefined && !checkSustained(weather, i, 'precipitation_sum', c.rain_max, 'max', days)) return false;
-        
         return true;
     }
 
@@ -146,8 +150,7 @@
             }
 
             const results = [];
-            const now = new Date();
-            const todayNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0).getTime();
+            const todayNoon = new Date().setHours(12, 0, 0, 0);
 
             rules.forEach(rule => {
                 let activeRange = null;
@@ -158,11 +161,9 @@
                         else activeRange.end = d;
                     } else if (activeRange) break;
                 }
-
                 if (activeRange) {
                     const fmt = d => {
-                        const dNoon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0).getTime();
-                        const diff = Math.round((dNoon - todayNoon) / 86400000);
+                        const diff = Math.round((new Date(d).setHours(12,0,0,0) - todayNoon) / 86400000);
                         if (diff === 0) return "MA";
                         if (diff === 1) return "HOLNAP";
                         if (diff < 0) return "ELMÚLT NAPOK";
@@ -178,7 +179,7 @@
 
             const renderZone = (items, fallback, id) => {
                 const displayItems = items.length ? items : [fallback];
-                return `<div id="${id}-carousel" style="min-height: 110px;">
+                return `<div id="${id}-carousel" style="min-height: 100px;">
                     ${displayItems.map((item, idx) => `
                         <div class="card-container animate-fade" style="${idx > 0 ? 'display:none;' : ''}">
                             <div class="card-line" style="background: ${item.color}"></div>
@@ -192,7 +193,7 @@
             widgetDiv.innerHTML = `
                 <div class="garden-main-card">
                     <div class="garden-title">Kertfigyelő</div>
-                    <button onclick="${isPersonalized ? 'window.resetLocation()' : 'window.activateLocalWeather()'}" class="loc-btn">
+                    <button onclick="window.gardenAction()" class="loc-btn">
                         ${isPersonalized ? 'VISSZA AZ ALAPHOZ' : 'SAJÁT KERTEM FIGYELÉSE'}
                     </button>
                     <div class="section-title alert-header">Riasztások</div>
@@ -200,10 +201,21 @@
                     <div class="section-title info-header">Teendők</div>
                     ${renderZone(infos, { range: 'MA', title: 'Pihenj!', msg: 'Élvezd a Mezítlábas Kertedet.', color: '#6691b3' }, 'info')}
                     <div class="garden-footer">
-                        v3.4.2 • Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU', {hour:'2-digit', minute:'2-digit'})}<br>
+                        v3.4.3 • Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU', {hour:'2-digit', minute:'2-digit'})}<br>
                         Winter Skin Edition
                     </div>
                 </div>`;
+
+            window.gardenAction = () => {
+                if (isPersonalized) {
+                    storage.removeItem('garden-lat'); storage.removeItem('garden-lon'); storage.removeItem('garden-weather-cache'); location.reload();
+                } else {
+                    navigator.geolocation.getCurrentPosition(p => {
+                        storage.setItem('garden-lat', p.coords.latitude); storage.setItem('garden-lon', p.coords.longitude);
+                        storage.removeItem('garden-weather-cache'); location.reload();
+                    }, () => alert("Hiba a helymeghatározáskor."));
+                }
+            };
 
             const setupCarousel = (id, count) => {
                 if (count <= 1) return;
@@ -219,25 +231,7 @@
             setupCarousel('alert', alerts.length || 1);
             setupCarousel('info', infos.length || 1);
 
-        } catch (e) { 
-            console.error(e);
-            widgetDiv.innerHTML = '<p style="font-size:10px; color:gray; text-align:center;">Hiba az adatok betöltésekor.</p>';
-        }
+        } catch (e) { console.error(e); }
     }
-
-    window.activateLocalWeather = () => navigator.geolocation.getCurrentPosition(p => {
-        storage.setItem('garden-lat', p.coords.latitude);
-        storage.setItem('garden-lon', p.coords.longitude);
-        storage.removeItem('garden-weather-cache');
-        location.reload();
-    }, () => alert("Hiba a helymeghatározáskor."));
-
-    window.resetLocation = () => {
-        storage.removeItem('garden-lat');
-        storage.removeItem('garden-lon');
-        storage.removeItem('garden-weather-cache');
-        location.reload();
-    };
-
     init();
 })();
