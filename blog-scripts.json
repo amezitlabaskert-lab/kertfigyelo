@@ -67,7 +67,7 @@
     "name": "❄️ Mérsékelt fagy",
     "type": "alert",
     "conditions": { "temp_below": -5 },
-    "seasons": [{ "start": "11-01", "end": "03-31" }],
+    "seasons": [{ "start": "10-15", "end": "04-15" }],
     "message": "Beköszöntött a csípős idő! Éjszaka -5°C köré hűl a levegő."
   },
   {
@@ -83,16 +83,16 @@
     "name": "🥶 Zord nappali fagy",
     "type": "alert",
     "conditions": { 
-      "temp_above": -5,
+      "temp_below": -5,
       "days_min": 1 
     },
-    "message": "A hőmérséklet napközben sem emelkedik -5°C fölé."
+    "message": "A hőmérséklet napközben sem emelkedik -5°C fölé. Vigyázz a kinti csapokra!"
   },
   {
     "id": "lemoso-permetezes",
     "name": "💦 Lemosó permetezés",
-    "type": "window",
-    "seasons": [{ "start": "02-15", "end": "03-31" }],
+    "type": "info",
+    "seasons": [{ "start": "02-10", "end": "03-25" }],
     "conditions": { 
       "temp_above": 5, 
       "wind_max": 12, 
