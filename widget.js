@@ -56,26 +56,58 @@
         return true;
     }
 
+    // HELYSZÍN KEZELÉS JAVÍTÁSA (Golyóálló megoldás)
     window.activateLocalWeather = () => navigator.geolocation.getCurrentPosition(p => {
-        localStorage.setItem('garden-lat', p.coords.latitude);
-        localStorage.setItem('garden-lon', p.coords.longitude);
-        location.reload();
+        try {
+            localStorage.setItem('garden-lat', p.coords.latitude);
+            localStorage.setItem('garden-lon', p.coords.longitude);
+            location.reload();
+        } catch (e) {
+            // Ha a localStorage tiltott (Tracking Prevention), URL-be tesszük a koordinátákat
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('lat', p.coords.latitude);
+            newUrl.searchParams.set('lon', p.coords.longitude);
+            window.location.href = newUrl.href;
+        }
     });
 
     window.resetLocation = () => { 
-        localStorage.removeItem('garden-lat');
-        localStorage.removeItem('garden-lon');
-        location.reload(); 
+        try { localStorage.removeItem('garden-lat'); localStorage.removeItem('garden-lon'); } catch(e) {}
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('lat');
+        newUrl.searchParams.delete('lon');
+        window.location.href = newUrl.origin + newUrl.pathname; 
     };
 
     try {
-        const lat = localStorage.getItem('garden-lat') || 47.5136;
-        const lon = localStorage.getItem('garden-lon') || 19.3735;
-        const isPersonalized = !!localStorage.getItem('garden-lat');
+        // Alapértelmezett anonim koordináták (Isaszeg környéke)
+        let lat = 47.5136;
+        let lon = 19.3735;
+        let isPersonalized = false;
+
+        // 1. Prioritás: URL paraméterek (ha a localStorage tiltott)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('lat') && urlParams.has('lon')) {
+            lat = urlParams.get('lat');
+            lon = urlParams.get('lon');
+            isPersonalized = true;
+        } 
+        // 2. Prioritás: LocalStorage (ha elérhető és van benne adat)
+        else {
+            try {
+                const sLat = localStorage.getItem('garden-lat');
+                const sLon = localStorage.getItem('garden-lon');
+                if (sLat && sLon) {
+                    lat = sLat;
+                    lon = sLon;
+                    isPersonalized = true;
+                }
+            } catch(e) { console.warn("Helyi tároló blokkolva."); }
+        }
 
         const [rulesRes, weatherRes] = await Promise.all([
             fetch('https://raw.githubusercontent.com/amezitlabaskert-lab/smart-events/main/blog-scripts.json'),
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_min,wind_speed_10m_max,precipitation_sum,soil_temperature_0_to_7cm&timezone=auto`)
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${Number(lat)}&longitude=${Number(lon)}&daily=temperature_2m_min,wind_speed_10m_max,precipitation_sum,soil_temperature_0_to_7cm&timezone=auto`)
         ]);
 
         const rules = await rulesRes.json();
@@ -85,7 +117,7 @@
 
         let htmlHeader = `
             <div style="background: #f8fafc; padding: 18px; border-radius: 14px; border: 1px solid #e2e8f0; position: relative; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 15px;">
-                <div style="position: absolute; top: 0; right: 0; background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 800; padding: 4px 12px; border-bottom-left-radius: 10px; text-transform: uppercase;">Tesztüzem v1.7</div>
+                <div style="position: absolute; top: 0; right: 0; background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 800; padding: 4px 12px; border-bottom-left-radius: 10px; text-transform: uppercase;">Tesztüzem v1.8</div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
                     <div style="flex: 1;">
                         <span style="font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px;">
@@ -108,7 +140,6 @@
             const typeClass = ['alert','info','window'].includes(rule.type) ? rule.type : 'info';
             let windows = [];
 
-            // --- HELYREÁLLÍTOTT ALERT VS WINDOW LOGIKA ---
             if (typeClass === 'alert') {
                 let first = null, last = null;
                 for (let i = 0; i < FORECAST_DAYS; i++) {
