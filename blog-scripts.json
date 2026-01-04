@@ -43,10 +43,10 @@
     "seasons": [{ "start": "06-01", "end": "08-31" }],
     "conditions": { 
       "temp_above": 28, 
-      "rain_max": 2, 
+      "rain_max": 3, 
       "days_min": 5 
     },
-    "message": "5 napja hőség van érdemi eső nélkül. Kritikus vízhiány várható a talajban!"
+    "message": "Már 5 napja tart a hőség érdemi csapadék nélkül. Kritikus vízhiány várható a talajban!"
   },
   {
     "id": "viharos-szel-riado",
@@ -83,7 +83,7 @@
     "name": "🥶 Zord nappali fagy",
     "type": "alert",
     "conditions": { 
-      "temp_below": -5,
+      "temp_above": -5,
       "days_min": 1 
     },
     "message": "A hőmérséklet napközben sem emelkedik -5°C fölé. Vigyázz a kinti csapokra!"
@@ -91,7 +91,7 @@
   {
     "id": "lemoso-permetezes",
     "name": "💦 Lemosó permetezés",
-    "type": "info",
+    "type": "window",
     "seasons": [{ "start": "02-10", "end": "03-25" }],
     "conditions": { 
       "temp_above": 5, 
