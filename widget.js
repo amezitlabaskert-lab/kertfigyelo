@@ -37,7 +37,7 @@
         .event-range { font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 12px; font-weight: 700; margin-bottom: 3px; text-transform: uppercase; }
         .event-msg { font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 15px; line-height: 1.4; }
         
-        .garden-footer { text-align: center; font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 9px; margin-top: 5px; padding: 5px 0; line-height: 1.2; border-top: 1px solid rgba(0,0,0,0.05); }
+        .garden-footer { text-align: center; font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 11px; margin-top: 10px; padding: 5px 0; line-height: 1.2; border-top: 1px solid rgba(0,0,0,0.05); }
         
         .loc-btn { width: 100%; cursor: pointer; padding: 8px; font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 10px; margin-bottom: 10px; text-transform: uppercase; font-weight: 800; border: none; outline: none; }
     `;
@@ -157,4 +157,5 @@
     }
     init();
 })();
+
 
