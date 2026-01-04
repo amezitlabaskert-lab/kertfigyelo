@@ -112,21 +112,22 @@
         const widgetDiv = document.getElementById('smart-garden-widget');
         const FORECAST_DAYS = weather.daily.temperature_2m_min.length;
 
+        // DIZÁJN: ÉLES SARKOK, KISEBB BETŰK (v2.3.8)
         let htmlBase = `
-            <div style="position: fixed; left: 40px; top: 180px; width: 310px; z-index: 9999; font-family: 'Plus Jakarta Sans', sans-serif; display: none;" id="garden-floating-sidebar">
-                <div style="background: white; padding: 25px; border-radius: 28px; box-shadow: 0 15px 50px rgba(0,0,0,0.15); border: 1px solid #f1f5f9;">
-                    <div style="margin-bottom: 20px; border-bottom: 2px solid #f8fafc; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="position: fixed; left: 40px; top: 180px; width: 280px; z-index: 9999; font-family: 'Plus Jakarta Sans', sans-serif; display: none;" id="garden-floating-sidebar">
+                <div style="background: white; padding: 18px; border-radius: 0px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+                    <div style="margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; flex-direction: column;">
-                            <span style="font-size: 0.8rem; font-weight: 800; color: #64748b; letter-spacing: 1.2px; text-transform: uppercase;">
+                            <span style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">
                                 ${isPersonalized ? 'KERTED' : 'KÖRZET'}
                             </span>
-                            <span style="font-size: 0.55rem; color: #cbd5e1; font-weight: 600;">v2.3.4</span>
+                            <span style="font-size: 0.5rem; color: #cbd5e1;">v2.3.8</span>
                         </div>
-                        <button onclick="${isPersonalized ? 'resetLocation()' : 'activateLocalWeather()'}" style="background: #f1f5f9; border: none; padding: 6px 14px; border-radius: 10px; font-size: 0.7rem; font-weight: 800; cursor: pointer; color: #1e293b; transition: 0.2s;">
+                        <button onclick="${isPersonalized ? 'resetLocation()' : 'activateLocalWeather()'}" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 0px; font-size: 0.6rem; font-weight: 800; cursor: pointer; color: #475569;">
                             ${isPersonalized ? 'VISSZA' : 'BEÁLLÍTÁS'}
                         </button>
                     </div>
-                    <div style="max-height: 500px; overflow-y: auto; padding-right: 8px;">`;
+                    <div style="max-height: 480px; overflow-y: auto; padding-right: 5px;">`;
 
         let htmlCards = '';
         let hasActiveCards = false;
@@ -136,44 +137,38 @@
         rules.forEach(rule => {
             const typeClass = rule.type || 'info';
             let windows = [];
-            // Alert/Window logika fut itt...
-            if (typeClass === 'alert') {
-                let first = null, last = null;
-                for (let i = 0; i < FORECAST_DAYS; i++) {
-                    const d = new Date(today); d.setDate(today.getDate() + i);
-                    if (checkDay(rule, weather, d, i, FORECAST_DAYS)) {
-                        if (!first) first = new Date(d);
-                        last = new Date(d);
-                    }
-                }
-                if (first) windows.push({ s: first, e: last });
-            } else {
-                let current = null;
-                for (let i = 0; i < FORECAST_DAYS; i++) {
-                    const d = new Date(today); d.setDate(today.getDate() + i);
-                    if (checkDay(rule, weather, d, i, FORECAST_DAYS)) {
-                        if (!current) current = { s: new Date(d), e: new Date(d) };
-                        else current.e = new Date(d);
-                    } else if (current) { windows.push(current); current = null; }
-                }
-                if (current) windows.push(current);
+            let current = null;
+
+            for (let i = 0; i < FORECAST_DAYS; i++) {
+                const d = new Date(today); d.setDate(today.getDate() + i);
+                if (checkDay(rule, weather, d, i, FORECAST_DAYS)) {
+                    if (!current) current = { s: new Date(d), e: new Date(d), count: 1 };
+                    else { current.e = new Date(d); current.count++; }
+                } else if (current) { windows.push(current); current = null; }
             }
+            if (current) windows.push(current);
 
             windows.forEach(w => {
                 hasActiveCards = true;
                 const dStr = w.s.toLocaleDateString('hu-HU', {month:'long', day:'numeric'});
-                const accentColor = typeClass === 'alert' ? '#3b82f6' : '#22c55e';
+                
+                // Intelligens név-összefűzés (v2.3.8)
+                let baseName = esc(rule.name).replace(/\s+várható$/i, ""); // Levágja a végi "várható"-t ha van
+                let displayTitle = baseName + (w.count > 1 ? ` várható a következő ${w.count} napban` : "");
+
+                const accentColor = typeClass === 'alert' ? '#2563eb' : '#16a34a';
                 
                 htmlCards += `
-                    <div style="margin-bottom: 25px;">
-                        <div style="font-size: 0.75rem; font-weight: 800; color: ${accentColor}; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">${dStr}</div>
-                        <div style="font-size: 1.15rem; font-weight: 800; color: #1e293b; line-height: 1.3; margin-bottom: 8px;">${esc(rule.name)}</div>
-                        <p style="margin:0; font-size: 0.95rem; color: #475569; line-height: 1.6;">${esc(rule.message)}</p>
+                    <div style="margin-bottom: 20px; border-left: 3px solid ${accentColor}; padding-left: 12px;">
+                        <div style="font-size: 0.65rem; font-weight: 800; color: ${accentColor}; text-transform: uppercase; margin-bottom: 3px;">${dStr}</div>
+                        <div style="font-size: 0.95rem; font-weight: 800; color: #1e293b; line-height: 1.2; margin-bottom: 5px;">${displayTitle}</div>
+                        <p style="margin:0; font-size: 0.8rem; color: #64748b; line-height: 1.4;">${esc(rule.message)}</p>
                     </div>`;
             });
         });
 
-        widgetDiv.innerHTML = htmlBase + (hasActiveCards ? htmlCards : '<p style="font-size:0.9rem; color:#94a3b8;">Nincs teendő.</p>') + `</div></div></div>`;
+        const emptyMsg = `<p style="text-align:center; padding:10px; color:#94a3b8; font-size: 0.75rem; font-style: italic;">Nincs teendő.</p>`;
+        widgetDiv.innerHTML = htmlBase + (hasActiveCards ? htmlCards : emptyMsg) + `</div></div></div>`;
 
         if (window.innerWidth > 1250) {
             document.getElementById('garden-floating-sidebar').style.display = 'block';
