@@ -1,6 +1,10 @@
 (async function() {
     const esc = str => String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
     
+    // Geofencing - Magyarország határai (Anonim marad, csak a háttérben fut)
+    const HU_BOUNDS = { latMin: 45.7, latMax: 48.6, lonMin: 16.1, lonMax: 22.9 };
+    const isInHungary = (lat, lon) => lat >= HU_BOUNDS.latMin && lat <= HU_BOUNDS.latMax && lon >= HU_BOUNDS.lonMin && lon <= HU_BOUNDS.lonMax;
+
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap';
     fontLink.rel = 'stylesheet';
@@ -78,23 +82,28 @@
     }
 
     window.activateLocalWeather = () => navigator.geolocation.getCurrentPosition(p => {
-        storage.setItem('garden-lat', p.coords.latitude);
-        storage.setItem('garden-lon', p.coords.longitude);
-        storage.removeItem('garden-weather-cache');
-        location.reload();
+        const uLat = p.coords.latitude;
+        const uLon = p.coords.longitude;
+        if (isInHungary(uLat, uLon)) {
+            storage.setItem('garden-lat', uLat);
+            storage.setItem('garden-lon', uLon);
+            storage.removeItem('garden-weather-cache');
+            location.reload();
+        } else {
+            alert("A testreszabás csak Magyarország területén érhető el.");
+        }
     }, (err) => { alert("Kérlek engedélyezd a helyszínt!"); });
 
     window.resetLocation = () => { 
         storage.removeItem('garden-lat'); storage.removeItem('garden-lon');
         storage.removeItem('garden-weather-cache');
-        window.location.href = window.location.origin + window.location.pathname;
+        location.reload();
     };
 
     try {
         let lat = 47.5136, lon = 19.3735, isPersonalized = false;
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('lat')) { lat = urlParams.get('lat'); lon = urlParams.get('lon'); isPersonalized = true; }
-        else { const sLat = storage.getItem('garden-lat'), sLon = storage.getItem('garden-lon'); if (sLat) { lat = sLat; lon = sLon; isPersonalized = true; } }
+        const sLat = storage.getItem('garden-lat'), sLon = storage.getItem('garden-lon');
+        if (sLat && sLon) { lat = sLat; lon = sLon; isPersonalized = true; }
 
         const cacheKey = 'garden-weather-cache';
         const cachedData = storage.getItem(cacheKey);
@@ -124,9 +133,8 @@
         if (!widgetDiv) return;
 
         const alerts = [];
-        const pastOffset = 7; 
         rules.forEach(rule => {
-            for (let i = pastOffset; i < weather.daily.time.length; i++) {
+            for (let i = 7; i < weather.daily.time.length; i++) {
                 const d = new Date(weather.daily.time[i]);
                 if (checkDay(rule, weather, d, i)) {
                     const label = rule.type === 'alert' ? 'RIASZTÁSOK' : 'TEENDŐK';
@@ -144,28 +152,28 @@
         const timeStr = lastUpdate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
 
         const isMobile = window.innerWidth < 1250;
-        const sidebarStyle = isMobile 
-            ? "position: relative; width: 100%; margin: 20px 0; z-index: 999; display: block;" 
-            : "position: fixed; left: 0px; top: 220px; width: 300px; z-index: 9999; display: block;";
+        const sidebarStyle = isMobile ? "position: relative; width: 100%; margin: 20px 0; z-index: 999;" : "position: fixed; left: 0px; top: 220px; width: 300px; z-index: 9999;";
 
         widgetDiv.innerHTML = `
             <div style="${sidebarStyle} font-family: 'Plus Jakarta Sans', sans-serif;" id="garden-floating-sidebar">
-                <div style="background: #ffffff; padding: 25px 25px 15px 25px; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); border-radius: 0px; border: 1px solid #f1f5f9;">
+                <div style="background: #ffffff; padding: 25px 25px 15px 25px; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); border: 1px solid #f1f5f9;">
                     <div style="text-align: center; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 15px; margin-bottom: 20px;">
                         <div class="garden-widget-main-title" style="font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; margin: 15px 0; line-height: 1;">
                             ${isPersonalized ? 'Kertfigyelőd' : 'Kertfigyelő'}
                         </div>
                         <button onclick="${isPersonalized ? 'resetLocation()' : 'activateLocalWeather()'}" 
                                 class="${isPersonalized ? '' : 'garden-btn-animate'}"
-                                style="border: 1px solid #346080; border-radius: 0px; padding: 12px 14px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.5s; width: 100%;">
-                            ${isPersonalized ? 'VISSZA AZ ALAPHOZ' : 'SAJÁT KERTFIGYELŐT SZERETNÉK!'}
+                                style="border: 1px solid #346080; padding: 12px 14px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 100%;">
+                            ${isPersonalized ? 'VISSZA AZ ALAPHOZ' : 'A SAJÁT KERTFIGYELŐMET SZERETNÉM'}
                         </button>
                     </div>
                     <div id="alert-zone" style="height: 135px; overflow: hidden;"></div>
                     <div class="garden-separator" style="height: 15px; margin-bottom: 15px;"></div>
                     <div id="info-zone" style="height: 135px; overflow: hidden;"></div>
-                    <div class="garden-footer-text" style="margin-top: 10px; text-align: center; line-height: 1.3; font-size: 8px; text-transform: uppercase; letter-spacing: 1px;">
-                        v3.3.0 • Frissítve: ${timeStr}<br>Winter Skin Edition
+                    <div class="garden-footer-text" style="margin-top: 10px; text-align: center; line-height: 1.4; font-size: 8px; text-transform: uppercase; letter-spacing: 1px;">
+                        Frissítve: ${timeStr}<br>
+                        Winter Skin Edition<br>
+                        v3.3.2
                     </div>
                 </div>
             </div>`;
@@ -197,5 +205,3 @@
         startCarousel('info-zone', finalInfos.length ? finalInfos : infoFallback);
     } catch (e) { console.error("Kertfigyelő hiba:", e); }
 })();
-
-
