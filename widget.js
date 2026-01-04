@@ -3,42 +3,47 @@
     
     const styleSheet = document.createElement("style");
     styleSheet.textContent = `
-        #smart-garden-widget { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            color: #334155; 
-            width: 300px; 
-            margin: 0;
-            padding: 0;
-            text-align: left;
+        /* ASZTALI NÉZET: A logó alatt lebeg bal oldalon */
+        @media screen and (min-width: 769px) {
+            #smart-garden-widget-wrapper {
+                position: absolute !important;
+                top: 380px !important; 
+                left: 15% !important;
+                transform: translateX(-50%) !important;
+                z-index: 9999 !important;
+                width: 320px !important;
+                margin: 0 !important;
+            }
         }
-        .garden-main-card { 
-            background: #ffffff; 
-            padding: 25px; 
-            border: 1px solid #f1f5f9; 
-            border-radius: 0; /* LEKEREKÍTÉS TÖRÖLVE */
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        /* MOBIL NÉZET: Visszakerül a tartalom végére */
+        @media screen and (max-width: 768px) {
+            #smart-garden-widget-wrapper {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                max-width: 320px;
+                margin: 40px auto !important;
+            }
         }
-        .garden-title { 
-            font-size: 28px; 
-            text-align: center; 
-            margin-bottom: 20px;
-            color: #6691b3; 
-        }
-        .section-title { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
-        .alert-header { color: #b91c1c; }
-        .info-header { color: #6691b3; margin-top: 25px; }
+        #smart-garden-widget { width: 300px; text-align: left; font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        .garden-main-card { background: #ffffff !important; padding: 25px; border: none !important; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5) !important; }
+        .garden-title { font-family: 'Dancing Script', cursive !important; font-size: 3.6em !important; text-align: center !important; color: #6691b3 !important; margin: 15px 0 !important; line-height: 1.2; }
+        .section-title { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; text-transform: uppercase; border-bottom: 1px solid #eeeeee; padding-bottom: 5px; }
+        .alert-header { color: #b91c1c !important; }
+        .info-header { color: #6691b3 !important; margin-top: 25px; }
         .card-container { position: relative; padding-left: 18px; margin-bottom: 15px; min-height: 85px; }
-        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 0; /* LEKEREKÍTÉS TÖRÖLVE */ }
-        .event-name { font-size: 16px; font-weight: 800; margin-bottom: 2px; }
-        .event-range { font-size: 9px; font-weight: 700; opacity: 0.7; margin-bottom: 6px; text-transform: uppercase; }
-        .event-msg { font-size: 12px; line-height: 1.5; }
-        .garden-footer { text-align: center; font-size: 9px; opacity: 0.5; margin-top: 20px; padding-top: 10px; border-top: 1px solid #f1f5f9; line-height: 1.6; }
-        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; border-radius: 0; /* LEKEREKÍTÉS TÖRÖLVE */ background: none; border: 1px solid #6691b3; color: #6691b3; margin-bottom: 20px; }
+        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+        .event-name { font-size: 16px; font-weight: 800; margin-bottom: 2px; color: #000000; }
+        .event-range { font-size: 9px; font-weight: 700; opacity: 0.7; margin-bottom: 6px; text-transform: uppercase; color: #000000; }
+        .event-msg { font-size: 12px; line-height: 1.5; color: #000000; }
+        .garden-footer { text-align: center; font-size: 9px; opacity: 0.5; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eeeeee; line-height: 1.6; color: #000000; }
+        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; background: none; border: 1px solid #000000; color: #000000; margin-bottom: 20px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
     `;
     document.head.appendChild(styleSheet);
 
+    // --- LOGIKA ÉS MEMÓRIA ---
     function createSafeStorage() {
         const memoryStore = {};
         try {
@@ -180,13 +185,13 @@
                         ${isPersonalized ? 'VISSZA AZ ALAPHOZ' : 'SAJÁT KERTFIGYELŐT SZERETNÉK!'}
                     </button>
                     <div class="section-title alert-header">Riasztások</div>
-                    ${renderZone(alerts, { range: 'Jelenleg', title: 'Minden nyugi', msg: 'Nincs veszély a láthatáron.', color: '#346080' }, 'alert')}
+                    ${renderZone(alerts, { range: 'Jelenleg', title: 'Minden nyugi', msg: 'Nincs veszély a láthatáron.', color: '#000000' }, 'alert')}
                     <div class="section-title info-header">Teendők</div>
-                    ${renderZone(infos, { range: 'MA', title: 'Pihenj!', msg: 'Élvezd a Mezítlábas Kertedet.', color: '#6691b3' }, 'info')}
+                    ${renderZone(infos, { range: 'MA', title: 'Pihenj!', msg: 'Élvezd a Mezítlábas Kertedet.', color: '#000000' }, 'info')}
                     <div class="garden-footer">
                         Last updated: ${lastUpdate.toLocaleTimeString('hu-HU', {hour:'2-digit', minute:'2-digit'})}<br>
                         Winter Skin Edition<br>
-                        v3.4.10
+                        v3.4.22
                     </div>
                 </div>`;
 
