@@ -47,21 +47,27 @@
         return date >= start && date <= end;
     }
 
+    // CHATGPT JAVÍTÁS: Robusztus operátor kezelés
     function checkSustained(weather, index, key, threshold, operator, days) {
         if (index < days - 1) return false;
         let anySatisfied = false;
+        const ops = operator.split('-');
+        const isAny = ops.includes('any');
+        const baseOp = ops[0];
+
         for (let i = 0; i < days; i++) {
             let val = weather.daily[key][index - i];
             let currentSatisfied = false;
-            if (operator.includes('above') && val >= threshold) currentSatisfied = true;
-            if (operator.includes('below') && val <= threshold) currentSatisfied = true;
-            if (operator.includes('max') && val <= threshold) currentSatisfied = true;
-            if (operator.includes('min') && val >= threshold) currentSatisfied = true;
             
-            if (!currentSatisfied && !operator.includes('-any')) return false;
+            if (baseOp === 'above' && val >= threshold) currentSatisfied = true;
+            if (baseOp === 'below' && val <= threshold) currentSatisfied = true;
+            if (baseOp === 'max' && val <= threshold) currentSatisfied = true;
+            if (baseOp === 'min' && val >= threshold) currentSatisfied = true;
+            
+            if (!currentSatisfied && !isAny) return false;
             if (currentSatisfied) anySatisfied = true;
         }
-        return operator.includes('-any') ? anySatisfied : true;
+        return isAny ? anySatisfied : true;
     }
 
     function checkDay(rule, weather, date, i) {
@@ -86,7 +92,6 @@
         }
         if (c.wind_max !== undefined && !checkSustained(weather, i, windKey, c.wind_max, 'max', days)) return false;
         
-        // JAVÍTOTT ESŐ LOGIKA (v3.3.7)
         if (c.rain_min_any !== undefined) {
             if (!checkSustained(weather, i, 'precipitation_sum', c.rain_min_any, 'min-any', days)) return false;
         } else if (c.rain_min !== undefined) {
@@ -142,9 +147,14 @@
         const widgetDiv = document.getElementById('smart-garden-widget');
         if (!widgetDiv) return;
 
+        // CHATGPT JAVÍTÁS: Robusztus mai nap indexelés
+        const todayStr = new Date().toISOString().split('T')[0];
+        let todayIdx = weather.daily.time.findIndex(t => t === todayStr);
+        if (todayIdx === -1) todayIdx = 7; // Biztonsági tartalék
+
         const alerts = [];
         rules.forEach(rule => {
-            for (let i = 7; i < weather.daily.time.length; i++) {
+            for (let i = todayIdx; i < weather.daily.time.length; i++) {
                 const d = new Date(weather.daily.time[i]);
                 if (checkDay(rule, weather, d, i)) {
                     const dateStr = d.toLocaleDateString('hu-HU', {month:'short', day:'numeric'});
@@ -181,7 +191,7 @@
                     <div style="height: 15px; margin-bottom: 15px;"></div>
                     <div id="info-zone" style="height: 135px; overflow: hidden;"></div>
                     <div style="margin-top: 10px; text-align: center; line-height: 1.4; font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">
-                        Frissítve: ${timeStr} | Winter Skin | v3.3.7
+                        Frissítve: ${timeStr} | Winter Skin | v3.3.8
                     </div>
                 </div>
             </div>`;
