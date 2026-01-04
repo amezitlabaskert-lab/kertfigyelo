@@ -70,11 +70,11 @@
     "seasons": [{ "start": "11-15", "end": "03-10" }],
     "conditions": { 
       "temp_below": 0, 
-      "wind_min": 25, 
+      "wind_min_any": 25, 
       "rain_max": 1,
       "days_min": 3 
     },
-    "message": "Tartós fagy és szárító szél: az örökzöldek szomjaznak. Ha enged a fagy, egy kis langyos öntözés életmentő lehet!"
+    "message": "3 napja fagy, és volt szárító szél is. Az örökzöldek (tuja, babérmeggy) szomjaznak! Ha enged a fagy, öntözd meg őket langyos vízzel."
   },
   {
     "id": "tavaszi-metszes",
