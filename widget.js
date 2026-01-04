@@ -104,19 +104,17 @@
             });
         });
 
-        // ÜRES ÁLLAPOTOK (FALLBACK)
         const alertFallback = [{ dStr: "Minden rendben", title: "☕ Most minden nyugi", msg: "A Kertfigyelő nem lát veszélyt a láthatáron. Főzz egy kávét!", color: "#2563eb" }];
         const infoFallback = [{ dStr: "Teendő", title: "🌿 Pihenj!", msg: "Nincs sürgős kerti munka, élvezd a tájat és a mezítlábas kertet.", color: "#16a34a" }];
 
         const finalAlerts = alerts.length > 0 ? alerts : alertFallback;
         const finalInfos = infos.length > 0 ? infos : infoFallback;
 
-        // HTML Felépítése
         widgetDiv.innerHTML = `
-            <div style="position: fixed; left: 45px; top: 180px; width: 340px; z-index: 9999; font-family: 'Plus Jakarta Sans', sans-serif; display: none;" id="garden-floating-sidebar">
+            <div style="position: fixed; left: 45px; top: 220px; width: 340px; z-index: 9999; font-family: 'Plus Jakarta Sans', sans-serif; display: none;" id="garden-floating-sidebar">
                 <div style="background: #ffffff; padding: 25px; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); border-radius: 0px;">
                     <div style="text-align: center; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 15px; margin-bottom: 20px;">
-                        <div style="font-family: 'Dancing Script', cursive; font-size: 3.6em; color: #1e293b; margin: 10px 0; line-height: 1;">
+                        <div class="garden-widget-title" style="font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; margin: 15px 0; line-height: 1;">
                             ${isPersonalized ? 'Kertfigyelőd' : 'Kertfigyelő'}
                         </div>
                         <button onclick="${isPersonalized ? 'resetLocation()' : 'activateLocalWeather()'}" style="background: transparent; border: 1px solid #e2e8f0; padding: 5px 15px; font-size: 10px; font-weight: bold; cursor: pointer; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
@@ -127,14 +125,13 @@
                     <div style="height: 20px;"></div>
                     <div id="info-zone" style="min-height: 110px;"></div>
                     <div style="font-size: 8px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 2px; margin-top: 15px; text-align: center;">
-                        v2.5.1 • Area 52
+                        v2.5.2 • Area 52
                     </div>
                 </div>
             </div>`;
 
         if (window.innerWidth > 1250) document.getElementById('garden-floating-sidebar').style.display = 'block';
 
-        // CAROUSEL LOGIKA
         function startCarousel(containerId, items) {
             const container = document.getElementById(containerId);
             let index = 0;
@@ -146,7 +143,7 @@
                         <div style="border-left: 4px solid ${item.color}; padding-left: 15px;">
                             <div style="font-size: 11px; font-weight: bold; color: ${item.color}; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px;">${item.dStr}</div>
                             <div style="font-size: 17px; font-weight: 800; color: #1e293b; line-height: 1.2; margin-bottom: 8px;">${esc(item.title)}</div>
-                            <p style="margin:0; font-size: 14px; color: #475569; line-height: 1.5;">${esc(item.msg)}</p>
+                            <p style="margin:0; font-size: 14px; line-height: 1.5;">${esc(item.msg)}</p>
                         </div>`;
                     container.style.opacity = 1;
                     index = (index + 1) % items.length;
