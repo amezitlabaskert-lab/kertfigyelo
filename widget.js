@@ -97,19 +97,21 @@
             if (current) windows.push(current);
             
             windows.forEach(w => {
-                const dStr = w.s.toLocaleDateString('hu-HU', {month:'long', day:'numeric'});
+                const label = rule.type === 'alert' ? 'RIASZTÁS' : 'TEENDŐ';
                 const title = rule.name.replace(/\s+várható$/i, "") + (w.count > 1 ? ` várható a következő ${w.count} napban` : "");
-                const card = { dStr, title, msg: rule.message, color: (rule.type === 'alert' ? '#2563eb' : '#16a34a') };
+                const card = { dStr: label, title, msg: rule.message, color: (rule.type === 'alert' ? '#2563eb' : '#16a34a') };
                 if (rule.type === 'alert') alerts.push(card); else infos.push(card);
             });
         });
 
-        const alertFallback = [{ dStr: "Minden rendben", title: "☕ Most minden nyugi", msg: "A Kertfigyelő nem lát veszélyt a láthatáron. Főzz egy kávét!", color: "#2563eb" }];
-        const infoFallback = [{ dStr: "Teendő", title: "🌿 Pihenj!", msg: "Nincs sürgős kerti munka, élvezd a tájat és a mezítlábas kertet.", color: "#16a34a" }];
+        // ÜRES ÁLLAPOTOK (FALLBACK)
+        const alertFallback = [{ dStr: "RIASZTÁS", title: "☕ Most minden nyugi", msg: "A Kertfigyelő nem lát veszélyt a láthatáron. Főzz egy kávét!", color: "#2563eb" }];
+        const infoFallback = [{ dStr: "TEENDŐ", title: "🌿 Pihenj!", msg: "Nincs sürgős kerti munka, élvezd a tájat és a mezítlábas kertet.", color: "#16a34a" }];
 
         const finalAlerts = alerts.length > 0 ? alerts : alertFallback;
         const finalInfos = infos.length > 0 ? infos : infoFallback;
 
+        // HTML Felépítése - width: 300px, top: 220px
         widgetDiv.innerHTML = `
             <div style="position: fixed; left: 45px; top: 220px; width: 300px; z-index: 9999; font-family: 'Plus Jakarta Sans', sans-serif; display: none;" id="garden-floating-sidebar">
                 <div style="background: #ffffff; padding: 25px; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); border-radius: 0px;">
@@ -125,13 +127,14 @@
                     <div style="height: 20px;"></div>
                     <div id="info-zone" style="min-height: 110px;"></div>
                     <div style="font-size: 8px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 2px; margin-top: 15px; text-align: center;">
-                        v2.5.2 • Area 52
+                        v2.5.3 • Area 52
                     </div>
                 </div>
             </div>`;
 
         if (window.innerWidth > 1250) document.getElementById('garden-floating-sidebar').style.display = 'block';
 
+        // CAROUSEL LOGIKA
         function startCarousel(containerId, items) {
             const container = document.getElementById(containerId);
             let index = 0;
@@ -159,4 +162,3 @@
 
     } catch (e) { console.error("Kertfigyelő hiba:", e); }
 })();
-
