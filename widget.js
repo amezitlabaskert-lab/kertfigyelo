@@ -150,7 +150,7 @@
 
         widgetDiv.innerHTML = `
             <div style="${sidebarStyle} font-family: 'Plus Jakarta Sans', sans-serif;" id="garden-floating-sidebar">
-                <div style="background: #ffffff; padding: 25px; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); border-radius: 0px; border: 1px solid #f1f5f9;">
+                <div style="background: #ffffff; padding: 25px 25px 15px 25px; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); border-radius: 0px; border: 1px solid #f1f5f9;">
                     <div style="text-align: center; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 15px; margin-bottom: 20px;">
                         <div class="garden-widget-main-title" style="font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; margin: 15px 0; line-height: 1;">
                             ${isPersonalized ? 'Kertfigyelőd' : 'Kertfigyelő'}
@@ -162,10 +162,10 @@
                         </button>
                     </div>
                     <div id="alert-zone" style="height: 135px; overflow: hidden;"></div>
-                    <div class="garden-separator"></div>
+                    <div class="garden-separator" style="height: 15px; margin-bottom: 15px;"></div>
                     <div id="info-zone" style="height: 135px; overflow: hidden;"></div>
-                    <div class="garden-footer-text" style="margin-top: 15px; text-align: center; line-height: 1.6;">
-                        v3.2.9 • Frissítve: ${timeStr}<br>Winter Skin Edition
+                    <div class="garden-footer-text" style="margin-top: 10px; text-align: center; line-height: 1.3; font-size: 8px; text-transform: uppercase; letter-spacing: 1px;">
+                        v3.3.0 • Frissítve: ${timeStr}<br>Winter Skin Edition
                     </div>
                 </div>
             </div>`;
