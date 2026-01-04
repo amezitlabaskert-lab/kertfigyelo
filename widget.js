@@ -186,18 +186,18 @@
                     </button>
                     
                     <div class="section-title alert-header">Riasztások</div>
-                    ${renderZone(alerts, { range: 'Jelenleg', title: 'Minden nyugi', msg: 'Nincs veszély a láthatáron.', color: '#000000' }, 'alert')}
+                    ${renderZone(alerts, { range: 'Jelenleg', title: 'Minden nyugi', msg: 'Nincs veszély a láthatáron.', color: '#94a3b8' }, 'alert')}
                     
                     ${windows.length ? '<div class="section-title window-header">Lehetőségek</div>' : ''}
                     ${renderZone(windows, null, 'window')}
 
                     <div class="section-title info-header">Teendők</div>
-                    ${renderZone(infos, { range: 'MA', title: 'Pihenj!', msg: 'Élvezd a Mezítlábas Kertedet.', color: '#000000' }, 'info')}
+                    ${renderZone(infos, { range: 'MA', title: 'Pihenj!', msg: 'Élvezd a Mezítlábas Kertedet.', color: '#94a3b8' }, 'info')}
                     
                     <div class="garden-footer">
                         Last updated: ${lastUpdate.toLocaleTimeString('hu-HU', {hour:'2-digit', minute:'2-digit'})}<br>
                         Winter Skin Edition<br>
-                        v3.4.25
+                        v3.4.26
                     </div>
                 </div>`;
 
