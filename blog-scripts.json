@@ -1,7 +1,7 @@
 [
   {
     "id": "mersekelt-fagy",
-    "name": "❄️ Mérsékelt fagy várható",
+    "name": "❄️ Mérsékelt fagy",
     "type": "alert",
     "conditions": { "temp_below": 0 },
     "seasons": [{ "start": "11-01", "end": "03-31" }],
@@ -14,7 +14,7 @@
   },
   {
     "id": "eros-fagy-riado",
-    "name": "❄️ Erős fagyok várhatók",
+    "name": "❄️ Erős fagy",
     "type": "alert",
     "conditions": { "temp_below": -10 },
     "seasons": [{ "start": "11-01", "end": "03-15" }],
@@ -24,7 +24,7 @@
       "Európai ciprus (Cupressus sempervirens)", 
       "Kínai selyemmirtusz (Lagerstroemia indica)"
     ],
-    "message": "Erős fagyok jönnek, az érzékenyebb növényeknek fagyvédelem szükséges!"
+    "message": "Erős fagyok jönnek (-10), az érzékenyebb növényeknek fagyvédelem szükséges!"
   },
   {
     "id": "tavaszi-metszes",
@@ -94,3 +94,4 @@
     "message": "A tartós meleg kedvez a díszbogarak rajzásának. Ebben az időszakban javasolt az érintett növények megfigyelése."
   }
 ]
+
