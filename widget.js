@@ -1,7 +1,6 @@
 (async function() {
     const esc = str => String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
     
-    // Betűtípusok betöltése
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap';
     fontLink.rel = 'stylesheet';
@@ -12,11 +11,7 @@
             const test = '__storage_test__';
             localStorage.setItem(test, test);
             localStorage.removeItem(test);
-            return { 
-                getItem: (k) => localStorage.getItem(k), 
-                setItem: (k, v) => localStorage.setItem(k, v), 
-                removeItem: (k) => localStorage.removeItem(k) 
-            };
+            return { getItem: (k) => localStorage.getItem(k), setItem: (k, v) => localStorage.setItem(k, v), removeItem: (k) => localStorage.removeItem(k) };
         } catch(e) {
             const store = {};
             return { getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }, removeItem: (k) => { delete store[k]; } };
@@ -24,7 +19,6 @@
     }
     const storage = safeLocalStorage();
 
-    // --- SEGÉDFÜGGVÉNYEK ---
     function isInSeason(date, startStr, endStr) {
         const [sM, sD] = startStr.split('-').map(Number);
         const [eM, eD] = endStr.split('-').map(Number);
@@ -75,9 +69,9 @@
     window.activateLocalWeather = () => navigator.geolocation.getCurrentPosition(p => {
         storage.setItem('garden-lat', p.coords.latitude);
         storage.setItem('garden-lon', p.coords.longitude);
-        storage.removeItem('garden-weather-cache'); // Új helyszínnél ürítjük a cache-t
+        storage.removeItem('garden-weather-cache');
         location.reload();
-    });
+    }, (err) => { alert("Kérlek engedélyezd a helyszínt a pontos adatokhoz!"); });
 
     window.resetLocation = () => { 
         storage.removeItem('garden-lat'); storage.removeItem('garden-lon');
@@ -91,7 +85,6 @@
         if (urlParams.has('lat')) { lat = urlParams.get('lat'); lon = urlParams.get('lon'); isPersonalized = true; }
         else { const sLat = storage.getItem('garden-lat'), sLon = storage.getItem('garden-lon'); if (sLat) { lat = sLat; lon = sLon; isPersonalized = true; } }
 
-        // --- CACHE LOGIKA (30 PERC) ---
         const cacheKey = 'garden-weather-cache';
         const cachedData = storage.getItem(cacheKey);
         let weather, lastUpdate;
@@ -99,7 +92,6 @@
         if (cachedData) {
             const parsed = JSON.parse(cachedData);
             const now = new Date().getTime();
-            // Ha 30 percnél (1800000 ms) frissebb az adat, és ugyanaz a koordináta
             if (now - parsed.timestamp < 1800000 && parsed.lat == lat && parsed.lon == lon) {
                 weather = parsed.data;
                 lastUpdate = new Date(parsed.timestamp);
@@ -122,13 +114,12 @@
 
         const alerts = [];
         const pastOffset = 7; 
-
         rules.forEach(rule => {
             for (let i = pastOffset; i < weather.daily.time.length; i++) {
                 const d = new Date(weather.daily.time[i]);
                 if (checkDay(rule, weather, d, i)) {
                     const label = rule.type === 'alert' ? 'RIASZTÁSOK' : 'TEENDŐK';
-                    const color = rule.type === 'alert' ? '#2563eb' : (rule.type === 'window' ? '#16a34a' : '#64748b');
+                    const color = rule.type === 'alert' ? '#346080' : (rule.type === 'window' ? '#6691b3' : '#475569');
                     alerts.push({ dStr: label, title: rule.name, msg: rule.message, color, type: rule.type });
                     break;
                 }
@@ -137,28 +128,26 @@
 
         const finalAlerts = alerts.filter(a => a.type === 'alert');
         const finalInfos = alerts.filter(a => a.type !== 'alert');
-
-        const alertFallback = [{ dStr: "RIASZTÁSOK", title: "☕ Most minden nyugi", msg: "A Kertfigyelő nem lát veszélyt a láthatáron. Főzz egy kávét!", color: "#2563eb" }];
-        const infoFallback = [{ dStr: "TEENDŐK", title: "🌿 Pihenj!", msg: "Nincs sürgős kerti munka, élvezd a Mezítlábas Kertedet.", color: "#16a34a" }];
-
+        const alertFallback = [{ dStr: "RIASZTÁSOK", title: "☕ Most minden nyugi", msg: "A Kertfigyelő nem lát veszélyt a láthatáron. Főzz egy kávét!", color: "#346080" }];
+        const infoFallback = [{ dStr: "TEENDŐK", title: "🌿 Pihenj!", msg: "Nincs sürgős kerti munka, élvezd a Mezítlábas Kertedet.", color: "#6691b3" }];
         const timeStr = lastUpdate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
 
         widgetDiv.innerHTML = `
             <div style="position: fixed; left: 0px; top: 220px; width: 300px; z-index: 9999; font-family: 'Plus Jakarta Sans', sans-serif; display: none;" id="garden-floating-sidebar">
                 <div style="background: #ffffff; padding: 25px; box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); border-radius: 0px;">
                     <div style="text-align: center; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 15px; margin-bottom: 20px;">
-                        <div class="garden-widget-title" style="font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; margin: 15px 0; line-height: 1;">
+                        <div class="garden-widget-title" style="font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; margin: 15px 0; line-height: 1; color: #346080;">
                             ${isPersonalized ? 'Kertfigyelőd' : 'Kertfigyelő'}
                         </div>
-                        <button onclick="${isPersonalized ? 'resetLocation()' : 'activateLocalWeather()'}" style="background: transparent; border: 1px solid #e2e8f0; padding: 5px 15px; font-size: 10px; font-weight: bold; cursor: pointer; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
-                            ${isPersonalized ? 'ALAPHELYZET' : 'SAJÁT KERT'}
+                        <button onclick="${isPersonalized ? 'resetLocation()' : 'activateLocalWeather()'}" style="background: ${isPersonalized ? 'transparent' : '#346080'}; border: 1px solid #346080; border-radius: 0px; padding: 10px 14px; font-size: 10px; font-weight: 800; cursor: pointer; color: ${isPersonalized ? '#346080' : 'white'}; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s;">
+                            ${isPersonalized ? '↩️ VISSZA AZ ALAPHOZ' : '📍 A saját kertem Kertfigyelőjét szeretném!'}
                         </button>
                     </div>
                     <div id="alert-zone" style="height: 135px; overflow: hidden;"></div>
                     <div style="height: 25px;"></div>
                     <div id="info-zone" style="height: 135px; overflow: hidden;"></div>
-                    <div style="font-size: 8px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px; text-align: center; line-height: 1.6;">
-                        v3.2.0 • Frissítve: ${timeStr}<br>Smart Cache Engine
+                    <div style="font-size: 8px; color: #6691b3; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px; text-align: center; line-height: 1.6;">
+                        v3.2.3 • Frissítve: ${timeStr}<br>Winter Skin Edition
                     </div>
                 </div>
             </div>`;
