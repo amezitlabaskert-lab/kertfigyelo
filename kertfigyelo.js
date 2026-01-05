@@ -96,7 +96,7 @@
     }
 
     async function init() {
-        const widgetDiv = document.getElementById('smart-garden-widget');
+        const widgetDiv = document.getElementById('kertfigyelo');
         if (!widgetDiv) return;
         
         try {
@@ -229,6 +229,7 @@
     }
     init();
 })();
+
 
 
 
