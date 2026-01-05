@@ -15,9 +15,7 @@
         #kertfigyelo { width: 300px; text-align: left; margin: 0; }
         .garden-main-card { 
             background: #ffffff !important; padding: 18px; margin-bottom: 20px !important; 
-            box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5) !important;
-            border-radius: 0 !important; height: 480px; display: flex; flex-direction: column;
-            border: 1px solid #eee;
+
         }
         .garden-title { font-family: 'Dancing Script', cursive !important; font-size: 3.6em !important; font-weight: 700 !important; text-align: center !important; margin: 5px 0 12px 0 !important; line-height: 1.1; color: #1a1a1a; }
         .section-title { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 800 !important; font-size: 14px !important; text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #64748b; }
@@ -229,6 +227,7 @@
     }
     init();
 })();
+
 
 
 
