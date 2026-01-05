@@ -7,12 +7,15 @@
     <style>
         body { 
             margin: 0; 
-            padding: 10px;
+            padding: 12px; 
             background: transparent; 
             overflow: hidden; 
             display: flex;
             justify-content: flex-start;
             align-items: flex-start;
+            /* Megakadályozza a szöveg kijelölését az egész widgetben */
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         #smart-garden-widget { 
@@ -22,14 +25,19 @@
             box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5) !important;
             box-sizing: border-box;
             min-height: 480px;
+            pointer-events: none; 
+        }
+
+        #smart-garden-widget button, 
+        #smart-garden-widget .loc-btn,
+        #smart-garden-widget a {
+            pointer-events: auto !important;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-
     <div id="smart-garden-widget"></div>
-
     <script src="https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo.js"></script>
-
 </body>
 </html>
