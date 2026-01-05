@@ -1,5 +1,5 @@
 (async function() {
-    // 1. Fontok és Stílusok (v3.6.9 - HungaroMet Integrated)
+    // 1. Fontok és Stílusok (v3.7.0 - HungaroMet wahx/wbhx Support)
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap';
     fontLink.rel = 'stylesheet';
@@ -101,7 +101,6 @@
             const sLat = localStorage.getItem('garden-lat'), sLon = localStorage.getItem('garden-lon');
             if (sLat && sLon) { lat = Number(sLat); lon = Number(sLon); isPers = true; }
 
-            // Látogató városának megállapítása IP alapján a riasztások szűréséhez
             try {
                 const geo = await fetch('https://ipapi.co/json/');
                 const gData = await geo.json();
@@ -118,7 +117,6 @@
                 }
             }
 
-            // Szabályok és HungaroMet riasztások lekérése
             const [rulesRes, hungaroRes] = await Promise.all([
                 fetch('https://raw.githubusercontent.com/amezitlabaskert-lab/smart-events/main/blog-scripts.json'),
                 fetch('https://raw.githubusercontent.com/amezitlabaskert-lab/workflows/main/riasztasok.json')
@@ -136,20 +134,21 @@
 
             const results = [];
             
-            // 1. HungaroMet riasztások feldolgozása (SAJÁT JÁRÁSRA)
+            // 1. HungaroMet riasztások (wahx=MOST, wbhx=HOLNAP)
             if (hData.alerts) {
                 const myAlert = hData.alerts.find(a => a.j.some(jaras => userCity.includes(jaras.replace('i',''))));
                 if (myAlert) {
+                    const isFuture = myAlert.f === 'wbhx';
                     results.push({
-                        range: `<span class="time-badge time-urgent">MOST</span>`,
+                        range: `<span class="time-badge ${isFuture ? 'time-warning' : 'time-urgent'}">${isFuture ? 'HOLNAP' : 'MOST'}</span>`,
                         title: `MET: ${myAlert.v}`,
-                        msg: `Hivatalos riasztás érvényben ${userCity} környékén. Fokozat: ${myAlert.sz}.`,
+                        msg: `Hivatalos figyelmeztetés ${userCity} környékén: ${myAlert.v} (${myAlert.sz}. fokozat).`,
                         type: 'alert'
                     });
                 }
             }
 
-            // 2. Open-Meteo alapú szabályok (Open-Meteo)
+            // 2. Open-Meteo alapú szabályok
             const todayStr = new Date().toISOString().split('T')[0];
             const noon = d => new Date(d).setHours(12,0,0,0);
 
@@ -215,7 +214,7 @@
                     ${renderZone(results.filter(r => r.type === 'window'), null, 'window')}
                     <div class="section-title">Teendők</div>
                     ${renderZone(results.filter(r => r.type !== 'alert' && r.type !== 'window'), getSeasonalFallback('info'), 'info')}
-                    <div class="garden-footer">Last updated: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})}<br>v3.6.9 - HungaroMet Ready</div>
+                    <div class="garden-footer">Last updated: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})}<br>v3.7.0 - HungaroMet Ready</div>
                 </div>`;
 
             document.getElementById('locBtn').onclick = () => {
