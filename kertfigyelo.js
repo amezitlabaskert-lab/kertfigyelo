@@ -118,7 +118,7 @@
                 }
             }
 
-            const rRes = await fetch('https://github.com/amezitlabaskert-lab/kertfigyelo/raw/refs/heads/main/kertfigyelo_esemenyek.json');
+            const rRes = await fetch('https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo_esemenyek.json');
             const rules = await rRes.json();
 
             if (!weather) {
@@ -232,5 +232,6 @@
     }
     init();
 })();
+
 
 
