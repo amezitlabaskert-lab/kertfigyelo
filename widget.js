@@ -1,5 +1,5 @@
 (async function() {
-    // 1. Fontok és Stílusok (v3.7.0 - HungaroMet wahx/wbhx Support)
+    // 1. Fontok és Stílusok (v3.7.1 - Fixed "Today" logic & MET Support)
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap';
     fontLink.rel = 'stylesheet';
@@ -170,23 +170,34 @@
                     } else if (range) break;
                 }
                 
-                if (range && noon(range.end) >= noon(todayStr)) {
-                    const fmt = (date, isStart) => {
-                        const diff = Math.round((noon(date) - noon(todayStr)) / 86400000);
-                        let timeLabel = "", urgencyClass = "";
-                        if (isStart) {
-                            if (diff === 0) { timeLabel = "MA ESTE"; urgencyClass = "time-urgent"; }
-                            else if (diff === 1) { timeLabel = "HOLNAP"; urgencyClass = "time-warning"; }
-                            else if (diff > 1 && diff <= 3) { timeLabel = diff + " NAP MÚLVA"; urgencyClass = "time-soon"; }
-                            else { timeLabel = date.toLocaleDateString('hu-HU', {month:'short', day:'numeric'}).toUpperCase().replace('.',''); }
-                            return `<span class="time-badge ${urgencyClass}">${timeLabel}</span>`;
-                        }
-                        return date.toLocaleDateString('hu-HU', {month:'short', day:'numeric'}).toUpperCase().replace('.','');
-                    };
-                    const dateRangeStr = (noon(range.start) !== noon(range.end)) 
-                        ? fmt(range.start, true) + ' — ' + fmt(range.end, false)
-                        : fmt(range.start, true);
-                    results.push({ range: dateRangeStr, title: rule.name, msg: rule.message, type: rule.type });
+                if (range) {
+                    const rangeStartNoon = noon(range.start);
+                    const rangeEndNoon = noon(range.end);
+                    const todayNoon = noon(todayStr);
+
+                    // FIX: Ha a fagyos időszakban vagyunk, kényszerítjük a MA kezdést
+                    if (todayNoon >= rangeStartNoon && todayNoon <= rangeEndNoon) {
+                        range.start = new Date(todayStr);
+                    }
+
+                    if (rangeEndNoon >= todayNoon) {
+                        const fmt = (date, isStart) => {
+                            const diff = Math.round((noon(date) - todayNoon) / 86400000);
+                            let timeLabel = "", urgencyClass = "";
+                            if (isStart) {
+                                if (diff <= 0) { timeLabel = "MA"; urgencyClass = "time-urgent"; }
+                                else if (diff === 1) { timeLabel = "HOLNAP"; urgencyClass = "time-warning"; }
+                                else if (diff > 1 && diff <= 3) { timeLabel = diff + " NAP MÚLVA"; urgencyClass = "time-soon"; }
+                                else { timeLabel = date.toLocaleDateString('hu-HU', {month:'short', day:'numeric'}).toUpperCase().replace('.',''); }
+                                return `<span class="time-badge ${urgencyClass}">${timeLabel}</span>`;
+                            }
+                            return date.toLocaleDateString('hu-HU', {month:'short', day:'numeric'}).toUpperCase().replace('.','');
+                        };
+                        const dateRangeStr = (noon(range.start) !== noon(range.end)) 
+                            ? fmt(range.start, true) + ' — ' + fmt(range.end, false)
+                            : fmt(range.start, true);
+                        results.push({ range: dateRangeStr, title: rule.name, msg: rule.message, type: rule.type });
+                    }
                 }
             });
 
@@ -214,7 +225,7 @@
                     ${renderZone(results.filter(r => r.type === 'window'), null, 'window')}
                     <div class="section-title">Teendők</div>
                     ${renderZone(results.filter(r => r.type !== 'alert' && r.type !== 'window'), getSeasonalFallback('info'), 'info')}
-                    <div class="garden-footer">Last updated: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})}<br>v3.7.0 - HungaroMet Ready</div>
+                    <div class="garden-footer">Last updated: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})}<br>v3.7.1 - Fixed "Today" logic</div>
                 </div>`;
 
             document.getElementById('locBtn').onclick = () => {
