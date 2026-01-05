@@ -1,0 +1,16 @@
+/* garden.css - Smart Garden Widget Classic Design */ v.1.0
+
+#smart-garden-widget { width: 300px; margin: 0 auto; font-family: 'Plus Jakarta Sans', sans-serif; background: #fff; padding: 15px; }
+.garden-title { font-family: 'Dancing Script', cursive!important; font-size: 3.5em!important; text-align: center; margin: 0 0 15px; color: #5b7c99; }
+.section-title { font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 8px; color: #8fa3b6; border-bottom: 1px solid #eee; }
+.event-item { position: relative; padding: 5px 0 5px 15px; margin-bottom: 12px; }
+.event-line { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 2px; }
+.line-alert { background: #b91c1c; } 
+.line-info { background: #8fa3b6; } 
+.line-window { background: #2d6a4f; }
+.event-name { font-weight: 800; font-size: 15px; color: #1e293b; margin-bottom: 2px; }
+.time-badge { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; }
+.badge-today { color: #b91c1c; } 
+.badge-future { color: #64748b; }
+.event-msg { font-size: 12px; line-height: 1.4; color: #475569; }
+.footer { text-align: center; font-size: 9px; margin-top: 20px; color: #cbd5e1; border-top: 1px solid #f1f5f9; padding-top: 10px; }
