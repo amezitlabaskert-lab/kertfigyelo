@@ -13,8 +13,14 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(71, 85, 105, 0); }
         }
         #kertfigyelo { width: 300px; text-align: left; margin: 0; }
-        .garden-main-card { 
-            background: #ffffff !important; padding: 18px; margin-bottom: 20px !important; 
+.garden-main-card { 
+            background: transparent !important; 
+            padding: 18px;                      
+            margin: 0 !important;               
+            display: flex; 
+            flex-direction: column;
+            box-sizing: border-box;
+        }
 
         }
         .garden-title { font-family: 'Dancing Script', cursive !important; font-size: 3.6em !important; font-weight: 700 !important; text-align: center !important; margin: 5px 0 12px 0 !important; line-height: 1.1; color: #1a1a1a; }
@@ -227,6 +233,7 @@
     }
     init();
 })();
+
 
 
 
