@@ -4,7 +4,7 @@
 .garden-title { font-family: 'Dancing Script', cursive!important; font-size: 3.5em!important; text-align: center; margin: 0 0 15px; color: #5b7c99; }
 .section-title { font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 8px; color: #8fa3b6; border-bottom: 1px solid #eee; }
 .event-item { position: relative; padding: 5px 0 5px 15px; margin-bottom: 12px; }
-.event-line { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 2px; }
+.event-line { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
 .line-alert { background: #b91c1c; } 
 .line-info { background: #8fa3b6; } 
 .line-window { background: #2d6a4f; }
