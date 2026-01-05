@@ -118,7 +118,7 @@
                 }
             }
 
-            const rRes = await fetch('https://raw.githubusercontent.com/amezitlabaskert-lab/smart-events/main/blog-scripts.json');
+            const rRes = await fetch('https://github.com/amezitlabaskert-lab/kertfigyelo/raw/refs/heads/main/kertfigyelo_esemenyek.json');
             const rules = await rRes.json();
 
             if (!weather) {
@@ -232,4 +232,5 @@
     }
     init();
 })();
+
 
