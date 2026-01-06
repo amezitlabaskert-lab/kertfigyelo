@@ -1,8 +1,5 @@
 [
   {
-    "_comment": "--- 1. KRITIKUS IDŐJÁRÁSI RIASZTÁSOK --- "
-  },
-  {
     "_comment": "1.",
     "id": "viharos-szel-riado",
     "name": "💨 Viharos szél",
@@ -85,9 +82,6 @@
     "category": "weather",
     "conditions": { "snow_min_any": 5 },
     "message": "Jelentős friss hó esett! Rázd le a havat az örökzöldekről, mielőtt letörnek az ágak!"
-  },
-  {
-    "_comment": "--- 2. KERTI LAKÓK (FAUNA) ---"
   },
   {
     "_comment": "9.",
@@ -214,9 +208,6 @@
     "message": "Varázslat az éjszakában: nézz körül sötétedés után, hátha látsz lámpásokat!"
   },
   {
-    "_comment": "--- 3. KERTI MUNKÁK (WINDOW) ---"
-  },
-  {
     "_comment": "20.",
     "id": "lemoso-permetezes",
     "name": "💦 Lemosó permetezés",
@@ -285,9 +276,6 @@
     "message": "Káliumtúlsúlyos őszi felkészítés: száraz fűre szórd ki, majd utána alaposan öntözd be!"
   },
   {
-    "_comment": "--- 4. UTÓLAGOS SZEMLE (CHECK) ---"
-  },
-  {
     "_comment": "26.",
     "id": "szemle-havazas",
     "name": "🔎 Havazás utáni szemle",
@@ -313,9 +301,6 @@
     "category": "check",
     "conditions": { "wind_gusts_min_any": 45, "days_min": 2 },
     "message": "Erős széllökések voltak az elmúlt napokban. Nézz rá a támrendszerekre!"
-  },
-  {
-    "_comment": "--- 5. SZEZONÁLIS ÉLETÉRZÉS (NONE) ---"
   },
   {
     "_comment": "29.",
@@ -364,3 +349,4 @@
     "message": "Tökéletes, szélcsendes este a kerti kikapcsolódáshoz. Élvezd a kerted gyümölcsét!"
   }
 ]
+
