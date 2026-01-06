@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v4.0.1'; 
+    const CACHE_VERSION = 'v4.0.2'; 
 
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap';
@@ -51,7 +51,11 @@
             if (key.startsWith('rain_min')) return d.precipitation_sum[idx] >= val;
             if (key.startsWith('rain_max')) return d.precipitation_sum[idx] <= val;
             if (key.startsWith('snow_min')) return d.snowfall_sum[idx] >= val;
-            if (key.startsWith('snow_depth')) return (d.snow_depth?.[idx] || 0) >= val;
+            // Hómélység helyett a hóesés összegére fallbackelünk, ha nincs depth adatunk
+            if (key.startsWith('snow_depth')) {
+                const depth = d.snow_depth ? d.snow_depth[idx] : d.snowfall_sum[idx];
+                return depth >= val;
+            }
             if (key.startsWith('wind_min')) {
                 const w = ruleType === 'alert' ? d.wind_gusts_10m_max[idx] : d.wind_speed_10m_max[idx];
                 return w >= val;
@@ -91,33 +95,29 @@
         if (!widgetDiv) return;
 
         try {
-            // --- KOORDINÁTA LOGIKA ---
             let lat = 47.5136, lon = 19.3735, isPers = false;
             const sLat = localStorage.getItem('garden-lat'), sLon = localStorage.getItem('garden-lon');
-            if (sLat && sLon) { 
-                lat = Number(sLat); 
-                lon = Number(sLon); 
-                isPers = true; 
-            }
+            if (sLat && sLon) { lat = Number(sLat); lon = Number(sLon); isPers = true; }
 
             let weather, lastUpdate;
             const cached = localStorage.getItem('garden-weather-cache');
             if (cached) {
                 try {
                     const p = JSON.parse(cached);
-                    if (p.version === CACHE_VERSION && p.data?.daily?.time && Date.now() - p.ts < 1800000 && Math.abs(p.lat - lat) < 0.01) {
+                    if (p.version === CACHE_VERSION && p.data?.daily?.time && Date.now() - p.ts < 1800000) {
                         weather = p.data; lastUpdate = new Date(p.ts);
                     }
-                } catch(e) { console.warn("Cache hiba"); }
+                } catch(e) {}
             }
 
             if (!weather) {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,snow_depth&past_days=7&timezone=auto`;
+                // KIVETTÜK A SNOW_DEPTH-et a lekérésből a stabilitás miatt
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum&past_days=7&timezone=auto`;
                 const res = await fetch(url);
                 if (!res.ok) throw new Error(`API hiba`);
                 weather = await res.json();
                 lastUpdate = new Date();
-                localStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather, lat, lon }));
+                try { localStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather, lat, lon })); } catch(e){}
             }
 
             const rules = await (await fetch('https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo_esemenyek.json?v=' + Date.now())).json();
@@ -163,21 +163,12 @@
                 </div>`;
 
             document.getElementById('locBtn').onclick = () => {
-                if (isPers) {
-                    localStorage.removeItem('garden-lat'); localStorage.removeItem('garden-lon');
-                    localStorage.removeItem('garden-weather-cache'); location.reload();
-                } else {
-                    navigator.geolocation.getCurrentPosition(p => {
-                        const {latitude: la, longitude: lo} = p.coords;
-                        // Magyarország határainak ellenőrzése
-                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) {
-                            localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo);
-                            localStorage.removeItem('garden-weather-cache'); location.reload();
-                        } else {
-                            alert("Sajnálom, ez a funkció csak Magyarország területén érhető el.");
-                        }
-                    }, () => alert("Helymeghatározási hiba. Kérlek, engedélyezd a hozzáférést!"));
-                }
+                if (isPers) { localStorage.removeItem('garden-lat'); localStorage.removeItem('garden-lon'); localStorage.removeItem('garden-weather-cache'); location.reload(); }
+                else { navigator.geolocation.getCurrentPosition(p => {
+                    const {latitude: la, longitude: lo} = p.coords;
+                    if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); localStorage.removeItem('garden-weather-cache'); location.reload(); }
+                    else alert("Csak Magyarországon működik.");
+                }, () => alert("Helymeghatározási hiba.")); }
             };
 
             const setup = (id, len) => {
@@ -188,7 +179,7 @@
             setup('alert', alerts.length); setup('tasks', others.length);
         } catch(e) { 
             console.error(e);
-            widgetDiv.innerHTML = `<div style="padding:20px; font-size:12px; color:gray; text-align:center;">Időjárási adatok frissítése...</div>`;
+            widgetDiv.innerHTML = `<div style="padding:20px; font-size:12px; color:gray; text-align:center;">Hiba az adatok betöltésekor.</div>`;
         }
     }
     init();
