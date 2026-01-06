@@ -3,8 +3,8 @@
     "id": "viharos-szel-riado",
     "name": "💨 Viharos szél",
     "type": "alert",
-    "conditions": { "wind_min": 39 },
-    "message": "Erős széllökések várhatók. Rögzítsd a kerti eszközöket és a napernyőket!"
+    "conditions": { "wind_gusts_min": 50 },
+    "message": "Erős széllökések (50 km/h+) várhatók. Rögzítsd a kerti eszközöket és a napernyőket!"
   },
   {
     "id": "felhoszakadas-riado",
@@ -61,8 +61,8 @@
     "id": "szemle-szel",
     "name": "🔎 Szél utáni szemle",
     "type": "info",
-    "conditions": { "wind_min_any": 40, "days_min": 2 },
-    "message": "Erős szél volt az elmúlt napokban. Nézz rá a támrendszerekre!"
+    "conditions": { "wind_gusts_min_any": 45, "days_min": 2 },
+    "message": "Erős széllökések voltak az elmúlt napokban. Nézz rá a támrendszerekre!"
   },
   {
     "id": "madaretetes-szezon",
