@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v4.2.1'; 
+    const CACHE_VERSION = 'v4.3.2'; 
 
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap';
@@ -111,7 +111,7 @@
             }
 
             if (!weather) {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum&past_days=7&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max&past_days=7&timezone=auto`;
                 const res = await fetch(url);
                 weather = await res.json();
                 lastUpdate = new Date();
@@ -136,12 +136,27 @@
                     } else if (range) break;
                 }
                 if (range && noon(range.end) >= noon(todayStr)) {
-                    // SZIGORÍTÁS: A szemle csak akkor jelenhet meg, ha a múltban vagy ma történt
                     if (rule.category === "check" && noon(range.start) > noon(todayStr)) return;
-                    
                     rawResults.push({ id: rule.id, start: range.start, end: range.end, title: rule.name, msg: rule.message, type: rule.type, category: rule.category });
                 }
             });
+
+            let tracker = JSON.parse(localStorage.getItem('garden-alert-tracker') || '{}');
+            const newTracker = {};
+            const nowTs = Date.now();
+            rawResults.forEach(res => {
+                if (res.id.includes('aszaly')) {
+                    newTracker[res.id] = tracker[res.id] || nowTs;
+                    const daysActive = Math.floor((nowTs - newTracker[res.id]) / 86400000);
+                    if (daysActive >= 7) {
+                        const weeks = Math.floor(daysActive / 7);
+                        res.customLabel = `${weeks} HETE TART`;
+                    } else if (daysActive > 0) {
+                        res.customLabel = `${daysActive} NAPJA TART`;
+                    }
+                }
+            });
+            localStorage.setItem('garden-alert-tracker', JSON.stringify(newTracker));
 
             let filtered = [];
             const highPriority = rawResults.filter(r => r.type !== 'none');
@@ -164,13 +179,26 @@
                     if (isStart) {
                         if (isSzezonalis) return `<span class="time-badge type-szezon">SZEZONÁLIS</span>`;
                         if (isSzemle) return `<span class="time-badge type-szemle">VISSZATEKINTŐ</span>`;
+                        if (item.customLabel) return `<span class="time-badge time-urgent">${item.customLabel}</span>`;
+                        
                         const cls = diff <= 0 ? "time-urgent" : (diff === 1 ? "time-warning" : "time-soon");
                         const label = diff < 0 ? "FOLYAMATBAN" : (diff === 0 ? "MA" : (diff === 1 ? "HOLNAP" : diff + " NAP MÚLVA"));
                         return `<span class="time-badge ${cls}">${label}</span>`;
                     }
                     return date.toLocaleDateString('hu-HU', {month:'short', day:'numeric'}).toUpperCase();
                 };
-                let rangeStr = !isSzezonalis ? (noon(item.start) !== noon(item.end) ? fmt(item.start, true) + ' — ' + fmt(item.end, false) : fmt(item.start, true)) : fmt(item.start, true);
+
+                let rangeStr = "";
+                if (isSzezonalis || isSzemle) {
+                    rangeStr = fmt(item.start, true);
+                } else if (item.id.includes('aszaly')) {
+                    const lastDayProb = weather.daily.precipitation_probability_max[6]; 
+                    // MÓDOSÍTOTT SZÖVEG:
+                    rangeStr = (lastDayProb < 30) ? `${fmt(item.start, true)} — NINCS ESŐ A LÁTHATÁRON` : `${fmt(item.start, true)} — ENYHÜLÉS VÁRHATÓ: ${fmt(item.end, false)}`;
+                } else {
+                    rangeStr = (noon(item.start) !== noon(item.end) ? fmt(item.start, true) + ' — ' + fmt(item.end, false) : fmt(item.start, true));
+                }
+
                 return { range: rangeStr, title: item.title, msg: item.msg, type: item.type };
             });
 
@@ -186,15 +214,13 @@
 
             document.getElementById('locBtn').onclick = () => {
                 if (isPers) { 
-                    localStorage.removeItem('garden-lat'); localStorage.removeItem('garden-lon'); localStorage.removeItem('garden-weather-cache'); location.reload(); 
+                    localStorage.removeItem('garden-lat'); localStorage.removeItem('garden-lon'); localStorage.removeItem('garden-alert-tracker'); localStorage.removeItem('garden-weather-cache'); location.reload(); 
                 } else { 
                     navigator.geolocation.getCurrentPosition(p => {
                         const {latitude: la, longitude: lo} = p.coords;
                         if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) {
-                            localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); localStorage.removeItem('garden-weather-cache'); location.reload();
-                        } else {
-                            alert("A funkció csak Magyarország területén érhető el.");
-                        }
+                            localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); location.reload();
+                        } else { alert("A funkció csak Magyarország területén érhető el."); }
                     }, () => alert("Helymeghatározási hiba.")); 
                 }
             };
@@ -205,9 +231,7 @@
                 let i = 0; setInterval(() => { if(items[i]) items[i].classList.remove('active'); i = (i + 1) % len; if(items[i]) items[i].classList.add('active'); }, 8000);
             };
             setup('alert', alerts.length); setup('tasks', others.length);
-        } catch(e) { 
-            widgetDiv.innerHTML = `<div style="padding:20px; font-size:12px; color:gray; text-align:center;">Hiba az adatok betöltésekor.</div>`;
-        }
+        } catch(e) { widgetDiv.innerHTML = `<div style="padding:20px; font-size:12px; color:gray; text-align:center;">Hiba az adatok betöltésekor.</div>`; }
     }
     init();
 })();
