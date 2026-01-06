@@ -53,20 +53,20 @@
     "message": "Téli aszály: nincs hó, tartós a fagy és szeles az idő. Fagymentes időben öntözd meg az örökzöldeket!"
   },
   {
-  "id": "nyari-aszaly-pro",
-  "name": "🔥 Aszályriadó",
-  "type": "alert",
-  "group": "aszaly",
-  "priority": 10,
-  "category": "weather",
-  "seasons": [ { "start": "06-01", "end": "08-31" } ],
-  "conditions": { 
-    "temp_above": 28, 
-    "rain_max": 7.9, 
-    "days_min": 7 
+    "id": "nyari-aszaly-pro",
+    "name": "🔥 Aszályriadó",
+    "type": "alert",
+    "group": "aszaly",
+    "priority": 10,
+    "category": "weather",
+    "seasons": [ { "start": "06-01", "end": "08-31" } ],
+    "conditions": { 
+      "temp_above": 28, 
+      "rain_max": 7.9, 
+      "days_min": 7 
+    },
+    "message": "Már {days} napja nem esett érdemi eső. A növényeknek most mélyöntözésre van szükségük! {next_rain}"
   },
-  "message": "Már {days} napja nem esett érdemi eső. A növényeknek most mélyöntözésre van szükségük!"
-  }
   {
     "_comment": "7.",
     "id": "extrem-hoseg",
@@ -145,7 +145,6 @@
     "message": "Kánikula van. Frissítsd a vizet a madáritatóban!"
   },
   {
-    {
     "_comment": "14.",
     "id": "sun-szallas-kereses",
     "name": "🦔 Süni fészekrakás",
@@ -354,8 +353,3 @@
     "message": "Tökéletes, szélcsendes este a kerti kikapcsolódáshoz. Élvezd a kerted gyümölcsét!"
   }
 ]
-
-
-
-
-
