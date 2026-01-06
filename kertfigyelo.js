@@ -14,7 +14,6 @@
         }
         #kertfigyelo { width: 300px; text-align: left; margin: 0; }
 
-        /* Ez a rész került nálad az idézőjelen kívülre, azért látod a képernyőn: */
         #kertfigyelo button, #kertfigyelo .loc-btn { 
             pointer-events: auto !important; 
             cursor: pointer !important; 
@@ -237,10 +236,11 @@
             setupCarousel('window', results.filter(r => r.type === 'window').length);
             setupCarousel('info', Math.max(1, results.filter(r => r.type !== 'alert' && r.type !== 'window').length));
 
-        } catch(e) { console.error("Garden Widget Error:", e); }
+        } catch(e) { console.error("Kertfigyelo Error:", e); }
     }
     init();
 })();
+
 
 
 
