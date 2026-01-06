@@ -1,6 +1,7 @@
 (async function() {
-    const CACHE_VERSION = 'v4.3.2'; 
+    const CACHE_VERSION = 'v4.3.5'; 
 
+    // --- STÍLUSOK ÉS BETŰKÉSZLETEK ---
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap';
     fontLink.rel = 'stylesheet';
@@ -13,7 +14,7 @@
             70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(71, 85, 105, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(71, 85, 105, 0); }
         }
-        #kertfigyelo { width: 300px; text-align: left; margin: 0; background: white; }
+        #kertfigyelo { width: 300px; text-align: left; margin: 0; background: white; overflow: hidden; }
         .garden-main-card { background: #ffffff !important; padding: 18px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 540px; height: auto; }
         .garden-title { font-family: 'Dancing Script', cursive !important; font-size: 3.2em !important; font-weight: 700 !important; text-align: center !important; margin: 5px 0 12px 0 !important; line-height: 1.1; color: #1a1a1a; }
         .section-title { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 800 !important; font-size: 14px !important; text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #64748b; }
@@ -21,7 +22,7 @@
         .carousel-item { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition: opacity 1.2s ease-in-out; display: flex; flex-direction: column; justify-content: center; }
         .carousel-item.active { opacity: 1; visibility: visible; }
         .card-container { position: relative; padding-left: 14px; width: 100%; box-sizing: border-box; }
-        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px;}
         .card-type-alert { background: #b91c1c !important; }
         .card-type-window { background: #2d6a4f !important; }
         .card-type-info { background: #6691b3 !important; }
@@ -42,6 +43,7 @@
 
     const noon = d => new Date(d).setHours(12,0,0,0);
 
+    // Feltétel ellenőrzés
     function checkCondition(weather, idx, key, val) {
         const d = weather.daily;
         if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
@@ -137,10 +139,11 @@
                 }
                 if (range && noon(range.end) >= noon(todayStr)) {
                     if (rule.category === "check" && noon(range.start) > noon(todayStr)) return;
-                    rawResults.push({ id: rule.id, start: range.start, end: range.end, title: rule.name, msg: rule.message, type: rule.type, category: rule.category });
+                    rawResults.push({ ...rule, start: range.start, end: range.end });
                 }
             });
 
+            // 1. ASZÁLY TRACKER (MAINTAINING CUSTOM LABELS)
             let tracker = JSON.parse(localStorage.getItem('garden-alert-tracker') || '{}');
             const newTracker = {};
             const nowTs = Date.now();
@@ -148,42 +151,54 @@
                 if (res.id.includes('aszaly')) {
                     newTracker[res.id] = tracker[res.id] || nowTs;
                     const daysActive = Math.floor((nowTs - newTracker[res.id]) / 86400000);
-                    if (daysActive >= 7) {
-                        const weeks = Math.floor(daysActive / 7);
-                        res.customLabel = `${weeks} HETE TART`;
-                    } else if (daysActive > 0) {
-                        res.customLabel = `${daysActive} NAPJA TART`;
-                    }
+                    if (daysActive >= 7) res.customLabel = `${Math.floor(daysActive/7)} HETE TART`;
+                    else if (daysActive > 0) res.customLabel = `${daysActive} NAPJA TART`;
                 }
             });
             localStorage.setItem('garden-alert-tracker', JSON.stringify(newTracker));
 
-            let filtered = [];
-            const highPriority = rawResults.filter(r => r.type !== 'none');
-            if (highPriority.length > 0) {
-                const hasStrongFrost = highPriority.some(r => r.id === "eros-fagy-riado");
-                filtered = highPriority.filter(r => {
-                    if (hasStrongFrost && r.id === "mersekelt-fagy") return false;
-                    return true;
-                });
-            } else {
-                filtered = rawResults.filter(r => r.type === 'none');
+            // --- RENDSZERTANI SZŰRÉS ---
+
+            // A. Csoportok szűrése (A legerősebb "Faj" marad a "Családban")
+            const groupWinners = {};
+            rawResults.forEach(r => {
+                if (r.group) {
+                    if (!groupWinners[r.group] || (r.priority || 0) > (groupWinners[r.group].priority || 0)) {
+                        groupWinners[r.group] = r;
+                    }
+                }
+            });
+
+            let taxonomyFiltered = rawResults.filter(r => {
+                if (!r.group) return true;
+                return r.id === groupWinners[r.group].id;
+            });
+
+            // B. Típus szerinti szűrés (Ha van Alert, az Info háttérbe szorul)
+            const alertsOnly = taxonomyFiltered.filter(r => r.type === 'alert');
+            const windowsOnly = taxonomyFiltered.filter(r => r.type === 'window');
+            
+            let finalSelection = taxonomyFiltered;
+            if (alertsOnly.length > 0) {
+                // Ha van riasztás, csak a riasztásokat és az időszerű ablakokat mutatjuk
+                finalSelection = [...alertsOnly, ...windowsOnly];
             }
 
-            const results = filtered.map(item => {
-                const isSzezonalis = item.category === "seasonal";
-                const isSzemle = item.category === "check";
-                
+            // C. Ha még így is üres (pl. nyugalmi időszak), jöhetnek a szezonális infók
+            if (finalSelection.length === 0) {
+                finalSelection = taxonomyFiltered.filter(r => r.type === 'none' || r.type === 'info');
+            }
+
+            const results = finalSelection.map(item => {
+                const isSzezonalis = item.category === "seasonal", isSzemle = item.category === "check";
                 const fmt = (date, isStart) => {
                     const diff = Math.round((noon(date) - noon(todayStr)) / 86400000);
                     if (isStart) {
                         if (isSzezonalis) return `<span class="time-badge type-szezon">SZEZONÁLIS</span>`;
                         if (isSzemle) return `<span class="time-badge type-szemle">VISSZATEKINTŐ</span>`;
                         if (item.customLabel) return `<span class="time-badge time-urgent">${item.customLabel}</span>`;
-                        
-                        const cls = diff <= 0 ? "time-urgent" : (diff === 1 ? "time-warning" : "time-soon");
                         const label = diff < 0 ? "FOLYAMATBAN" : (diff === 0 ? "MA" : (diff === 1 ? "HOLNAP" : diff + " NAP MÚLVA"));
-                        return `<span class="time-badge ${cls}">${label}</span>`;
+                        return `<span class="time-badge ${diff <= 0 ? 'time-urgent' : (diff === 1 ? 'time-warning' : 'time-soon')}">${label}</span>`;
                     }
                     return date.toLocaleDateString('hu-HU', {month:'short', day:'numeric'}).toUpperCase();
                 };
@@ -192,46 +207,31 @@
                 if (isSzezonalis || isSzemle) {
                     rangeStr = fmt(item.start, true);
                 } else if (item.id.includes('aszaly')) {
-                    const lastDayProb = weather.daily.precipitation_probability_max[6]; 
-                    // MÓDOSÍTOTT SZÖVEG:
-                    rangeStr = (lastDayProb < 30) ? `${fmt(item.start, true)} — NINCS ESŐ A LÁTHATÁRON` : `${fmt(item.start, true)} — ENYHÜLÉS VÁRHATÓ: ${fmt(item.end, false)}`;
+                    const lastDayProb = weather.daily.precipitation_probability_max[6];
+                    rangeStr = (lastDayProb < 30) ? fmt(item.start, true) : `${fmt(item.start, true)} — CSAPADÉK: ${fmt(item.end, false)}`;
                 } else {
                     rangeStr = (noon(item.start) !== noon(item.end) ? fmt(item.start, true) + ' — ' + fmt(item.end, false) : fmt(item.start, true));
                 }
-
-                return { range: rangeStr, title: item.title, msg: item.msg, type: item.type };
+                return { range: rangeStr, title: item.name, msg: item.message, type: item.type };
             });
 
-            const alerts = results.filter(r => r.type === 'alert'), others = results.filter(r => r.type !== 'alert');
-            widgetDiv.innerHTML = `
-                <div class="garden-main-card">
-                    <div class="garden-title">${isPers ? 'Kertfigyelőd' : 'Kertfigyelő'}</div>
-                    <button id="locBtn" class="loc-btn">${isPers ? 'Vissza az alaphoz' : 'Saját kertfigyelőt!'}</button>
-                    <div class="section-title">Riasztások</div>${renderZone(alerts, 'alert')}
-                    <div class="section-title">Teendők & Info</div>${renderZone(others, 'tasks')}
-                    <div class="garden-footer">Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})}<br>${CACHE_VERSION}</div>
-                </div>`;
+            const alertsZone = results.filter(r => r.type === 'alert'), othersZone = results.filter(r => r.type !== 'alert');
+            widgetDiv.innerHTML = `<div class="garden-main-card">
+                <div class="garden-title">${isPers ? 'Kertfigyelőd' : 'Kertfigyelő'}</div>
+                <button id="locBtn" class="loc-btn">${isPers ? 'Vissza az alaphoz' : 'Saját kertfigyelőt!'}</button>
+                <div class="section-title">Riasztások</div>${renderZone(alertsZone, 'alert')}
+                <div class="section-title">Teendők & Info</div>${renderZone(othersZone, 'tasks')}
+                <div class="garden-footer">Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})}<br>${CACHE_VERSION}</div>
+            </div>`;
 
             document.getElementById('locBtn').onclick = () => {
-                if (isPers) { 
-                    localStorage.removeItem('garden-lat'); localStorage.removeItem('garden-lon'); localStorage.removeItem('garden-alert-tracker'); localStorage.removeItem('garden-weather-cache'); location.reload(); 
-                } else { 
-                    navigator.geolocation.getCurrentPosition(p => {
-                        const {latitude: la, longitude: lo} = p.coords;
-                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) {
-                            localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); location.reload();
-                        } else { alert("A funkció csak Magyarország területén érhető el."); }
-                    }, () => alert("Helymeghatározási hiba.")); 
-                }
+                if (isPers) { localStorage.removeItem('garden-lat'); localStorage.removeItem('garden-lon'); localStorage.removeItem('garden-alert-tracker'); localStorage.removeItem('garden-weather-cache'); location.reload(); }
+                else { navigator.geolocation.getCurrentPosition(p => { const {latitude: la, longitude: lo} = p.coords; if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); location.reload(); } else { alert("Csak Magyarországon."); } }, () => alert("Hiba.")); }
             };
 
-            const setup = (id, len) => {
-                if (len <= 1) return;
-                const items = document.querySelectorAll(`#${id}-carousel .carousel-item`);
-                let i = 0; setInterval(() => { if(items[i]) items[i].classList.remove('active'); i = (i + 1) % len; if(items[i]) items[i].classList.add('active'); }, 8000);
-            };
-            setup('alert', alerts.length); setup('tasks', others.length);
-        } catch(e) { widgetDiv.innerHTML = `<div style="padding:20px; font-size:12px; color:gray; text-align:center;">Hiba az adatok betöltésekor.</div>`; }
+            const setup = (id, len) => { if (len <= 1) return; const items = document.querySelectorAll(`#${id}-carousel .carousel-item`); let i = 0; setInterval(() => { if(items[i]) items[i].classList.remove('active'); i = (i + 1) % len; if(items[i]) items[i].classList.add('active'); }, 8000); };
+            setup('alert', alertsZone.length); setup('tasks', othersZone.length);
+        } catch(e) { console.error(e); widgetDiv.innerHTML = `<div style="padding:20px; font-size:12px; color:gray; text-align:center;">Hiba az adatok betöltésekor.</div>`; }
     }
     init();
 })();
