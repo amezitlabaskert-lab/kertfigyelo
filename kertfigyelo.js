@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v4.3.5'; 
+    const CACHE_VERSION = 'v4.3.6'; 
 
     // --- STÍLUSOK ÉS BETŰKÉSZLETEK ---
     const fontLink = document.createElement('link');
@@ -14,15 +14,15 @@
             70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(71, 85, 105, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(71, 85, 105, 0); }
         }
-        #kertfigyelo { width: 300px; text-align: left; margin: 0; background: white; overflow: hidden; }
-        .garden-main-card { background: #ffffff !important; padding: 18px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 540px; height: auto; }
+        #kertfigyelo { width: 300px; text-align: left; margin: 0; background: white; overflow: hidden; border-radius: 0; }
+        .garden-main-card { background: #ffffff !important; padding: 18px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 540px; height: auto; border-radius: 0; }
         .garden-title { font-family: 'Dancing Script', cursive !important; font-size: 3.2em !important; font-weight: 700 !important; text-align: center !important; margin: 5px 0 12px 0 !important; line-height: 1.1; color: #1a1a1a; }
         .section-title { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 800 !important; font-size: 14px !important; text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #64748b; }
         .carousel-wrapper { position: relative; height: 165px; margin-bottom: 5px; overflow: hidden; }
         .carousel-item { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition: opacity 1.2s ease-in-out; display: flex; flex-direction: column; justify-content: center; }
         .carousel-item.active { opacity: 1; visibility: visible; }
         .card-container { position: relative; padding-left: 14px; width: 100%; box-sizing: border-box; }
-        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px;}
+        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 0; }
         .card-type-alert { background: #b91c1c !important; }
         .card-type-window { background: #2d6a4f !important; }
         .card-type-info { background: #6691b3 !important; }
@@ -37,13 +37,12 @@
         .time-warning { background: #ea580c; color: #fff; }
         .time-soon { background: #64748b; color: #fff; }
         .garden-footer { text-align: center; font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 10px !important; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); opacity: 0.6; }
-        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 10px; margin-bottom: 5px; text-transform: uppercase; font-weight: 800; border: none; background: #475569; color: white; animation: pulse-invitation 3s infinite ease-in-out; }
+        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 10px; margin-bottom: 5px; text-transform: uppercase; font-weight: 800; border: none; border-radius: 0; background: #475569; color: white; animation: pulse-invitation 3s infinite ease-in-out; }
     `;
     document.head.appendChild(styleSheet);
 
     const noon = d => new Date(d).setHours(12,0,0,0);
 
-    // Feltétel ellenőrzés
     function checkCondition(weather, idx, key, val) {
         const d = weather.daily;
         if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
@@ -143,7 +142,7 @@
                 }
             });
 
-            // 1. ASZÁLY TRACKER (MAINTAINING CUSTOM LABELS)
+            // Aszály tracker
             let tracker = JSON.parse(localStorage.getItem('garden-alert-tracker') || '{}');
             const newTracker = {};
             const nowTs = Date.now();
@@ -157,9 +156,7 @@
             });
             localStorage.setItem('garden-alert-tracker', JSON.stringify(newTracker));
 
-            // --- RENDSZERTANI SZŰRÉS ---
-
-            // A. Csoportok szűrése (A legerősebb "Faj" marad a "Családban")
+            // RENDSZERTANI SZŰRÉS
             const groupWinners = {};
             rawResults.forEach(r => {
                 if (r.group) {
@@ -169,27 +166,18 @@
                 }
             });
 
-            let taxonomyFiltered = rawResults.filter(r => {
-                if (!r.group) return true;
-                return r.id === groupWinners[r.group].id;
-            });
+            const taxonomyFiltered = rawResults.filter(r => !r.group || r.id === groupWinners[r.group].id);
 
-            // B. Típus szerinti szűrés (Ha van Alert, az Info háttérbe szorul)
-            const alertsOnly = taxonomyFiltered.filter(r => r.type === 'alert');
-            const windowsOnly = taxonomyFiltered.filter(r => r.type === 'window');
+            // --- JAVÍTOTT ZÓNA SZÉTVÁLOGATÁS ---
+            const alertsZoneRaw = taxonomyFiltered.filter(r => r.type === 'alert');
             
-            let finalSelection = taxonomyFiltered;
-            if (alertsOnly.length > 0) {
-                // Ha van riasztás, csak a riasztásokat és az időszerű ablakokat mutatjuk
-                finalSelection = [...alertsOnly, ...windowsOnly];
+            // OthersZone prioritás: 1. Windows, 2. Info/None
+            let othersZoneRaw = taxonomyFiltered.filter(r => r.type === 'window');
+            if (othersZoneRaw.length === 0) {
+                othersZoneRaw = taxonomyFiltered.filter(r => r.type === 'info' || r.type === 'none');
             }
 
-            // C. Ha még így is üres (pl. nyugalmi időszak), jöhetnek a szezonális infók
-            if (finalSelection.length === 0) {
-                finalSelection = taxonomyFiltered.filter(r => r.type === 'none' || r.type === 'info');
-            }
-
-            const results = finalSelection.map(item => {
+            const mapToResult = (item) => {
                 const isSzezonalis = item.category === "seasonal", isSzemle = item.category === "check";
                 const fmt = (date, isStart) => {
                     const diff = Math.round((noon(date) - noon(todayStr)) / 86400000);
@@ -213,9 +201,11 @@
                     rangeStr = (noon(item.start) !== noon(item.end) ? fmt(item.start, true) + ' — ' + fmt(item.end, false) : fmt(item.start, true));
                 }
                 return { range: rangeStr, title: item.name, msg: item.message, type: item.type };
-            });
+            };
 
-            const alertsZone = results.filter(r => r.type === 'alert'), othersZone = results.filter(r => r.type !== 'alert');
+            const alertsZone = alertsZoneRaw.map(mapToResult);
+            const othersZone = othersZoneRaw.map(mapToResult);
+
             widgetDiv.innerHTML = `<div class="garden-main-card">
                 <div class="garden-title">${isPers ? 'Kertfigyelőd' : 'Kertfigyelő'}</div>
                 <button id="locBtn" class="loc-btn">${isPers ? 'Vissza az alaphoz' : 'Saját kertfigyelőt!'}</button>
