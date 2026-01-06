@@ -45,9 +45,9 @@
   },
   {
     "name": "🔎 Havazás utáni szemle",
-    "message": "Hó esett vagy maradt a közelmúltban. Ellenőrizd az örökzöldeket!",
+    "message": "Hó esett vagy maradt a közelmúltban. Ellenőrizd a növényeket hónyomás miatt!",
     "type": "info",
-    "conditions": { "snow_depth_any": 1, "days_min": 2 }
+    "conditions": { "snow_min_any": 1, "days_min": 2 }
   },
   {
     "name": "🔎 Eső utáni szemle",
@@ -67,14 +67,14 @@
     "type": "info",
     "seasons": [{ "start": "11-15", "end": "03-15" }],
     "conditions": { "temp_below": 2 },
-    "message": "Beköszöntött a hideg. Töltsd fel az etetőket napraforgómaggal és almával!"
+    "message": "Beköszöntött a hideg. Töltsd fel a madáretetőket és gyönyörködj a sok kis vendégedben!"
   },
   {
     "id": "madaretetes-ho",
     "name": "❄️ Kritikus etetés",
     "type": "alert",
     "conditions": { "snow_depth_any": 1 },
-    "message": "Hótakaró fedi a tájat, a madarak nem találnak táplálékot a földön. Pótold az eleséget!"
+    "message": "Hótakaró fedi a tájat, a madarak nem találnak táplálékot a földön. Tegyél ki eleséget!"
   },
   {
     "id": "madaritatas-tel",
@@ -82,7 +82,7 @@
     "type": "alert",
     "seasons": [{ "start": "11-01", "end": "03-15" }],
     "conditions": { "temp_min_below": 0 },
-    "message": "Fagyos idő van! A természetes vizek befagytak. Cseréld langyosra a vizet az itatókban!"
+    "message": "Fagyos idő van! A természetes vizek befagytak. Figyelj az itatókra!"
   },
   {
     "id": "madaretetes-stop",
@@ -172,3 +172,4 @@
     "seasons": [{ "start": "09-01", "end": "11-30" }]
   }
 ]
+
