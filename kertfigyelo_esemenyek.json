@@ -6,7 +6,7 @@
     "type": "alert",
     "category": "weather",
     "conditions": { "wind_gusts_min": 50 },
-    "message": "Erős széllökések (50 km/h+) várhatók. Rögzítsd a kerti eszközöket és a napernyőket!"
+    "message": "Erős, {wind} km/h-ás széllökések várhatók. Rögzítsd a kerti eszközöket és a napernyőket!"
   },
   {
     "_comment": "2.",
@@ -15,7 +15,7 @@
     "type": "alert",
     "category": "weather",
     "conditions": { "rain_min": 15 },
-    "message": "Intenzív esőzés (15mm+) várható rövid idő alatt. Ellenőrizd a vízelvezetőket!"
+    "message": "Intenzív esőzés ({rain} mm) várható rövid idő alatt. Ellenőrizd a vízelvezetőket!"
   },
   {
     "_comment": "3.",
@@ -39,7 +39,7 @@
     "category": "weather",
     "seasons": [ { "start": "11-01", "end": "03-15" } ],
     "conditions": { "temp_min_below": -10 },
-    "message": "Erős fagyok várhatók (-10°C)! Ellenőrizd az érzékenyebb növények takarását!"
+    "message": "Erős fagyok várhatók {temp}°C! Ellenőrizd az érzékenyebb növények takarását!"
   },
   {
     "_comment": "5.",
@@ -351,6 +351,7 @@
     "message": "Tökéletes, szélcsendes este a kerti kikapcsolódáshoz. Élvezd a kerted gyümölcsét!"
   }
 ]
+
 
 
 
