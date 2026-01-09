@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v4.5.7'; 
+    const CACHE_VERSION = 'v4.5.8'; 
     const RAIN_THRESHOLD = 8; // mm
 
     const fontLink = document.createElement('link');
@@ -15,7 +15,7 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(71, 85, 105, 0); }
         }
         #kertfigyelo { width: 300px; text-align: left; margin: 0; background: white; overflow: hidden; border-radius: 0; }
-        .garden-main-card { background: #ffffff !important; padding: 18px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 480px; height: auto; border-radius: 0; pointer-events: none;user-select: none; }
+        .garden-main-card { background: #ffffff !important; padding: 18px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 480px; height: auto; border-radius: 0; pointer-events: none; user-select: none; }
         .garden-title { font-family: 'Dancing Script', cursive !important; font-size: 3.6em !important; font-weight: 700 !important; text-align: center !important; margin: 5px 0 12px 0 !important; line-height: 1.1; color: #1a1a1a; }
         .section-title { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 800 !important; font-size: 14px !important; text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #64748b; }
         .carousel-wrapper { position: relative; height: 140px; margin-bottom: 5px; overflow: hidden; }
@@ -80,12 +80,12 @@
         const d = weather.daily;
         if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
         if (key === 'temp_min_below' || key === 'temp_below') return d.temperature_2m_min[idx] <= val;
-        if (key === 'temp_min_above') return d.temperature_2m_min[idx] >= val; // FIX 4
+        if (key === 'temp_min_above') return d.temperature_2m_min[idx] >= val;
         if (key === 'temp_above') return d.temperature_2m_max[idx] >= val;
         if (key.startsWith('rain_min')) return d.precipitation_sum[idx] >= val;
         if (key.startsWith('rain_max')) return d.precipitation_sum[idx] <= val;
         if (key.includes('wind_gusts')) return d.wind_gusts_10m_max[idx] >= val;
-        if (key === 'wind_max') return d.wind_speed_10m_max[idx] <= val; // FIX 3
+        if (key === 'wind_max') return d.wind_speed_10m_max[idx] <= val;
         if (key.includes('snow')) return d.snowfall_sum[idx] >= val;
         if (key === 'days_min') return dryDays >= val;
         if (key === 'days_max') return dryDays <= val;
@@ -94,10 +94,7 @@
 
     function checkSustained(weather, dayIdx, rule, dryDays) {
         const cond = rule.conditions || {};
-        
-        // SPECIÁLIS SZEMLE KEZELÉS (Category Check)
         if (rule.category === 'check') {
-            // Visszanézünk ma (idx) és tegnap (idx-1)
             for (let i = 0; i <= 1; i++) {
                 const cIdx = dayIdx - i;
                 if (cIdx < 0) continue;
@@ -109,8 +106,6 @@
             }
             return false;
         }
-
-        // NORMÁL LOGIKA
         if (cond.days_min !== undefined && dryDays < cond.days_min) return false;
         const days = (cond.days_min && !cond.temp_above) ? 1 : (cond.days_min || 1);
         if (dayIdx < days - 1) return false;
@@ -163,7 +158,6 @@
             rules.forEach(rule => {
                 if (!rule.id) return;
                 let range = null;
-                // Csak a maira és jövőre vizsgálunk (idx >= 7), de a checkSustained visszanézhet
                 for (let i = todayIdx; i < weather.daily.time.length; i++) {
                     const d = new Date(weather.daily.time[i]);
                     const inSeason = !rule.seasons || rule.seasons.some(s => {
@@ -212,16 +206,33 @@
                 <div class="garden-footer">Helyszín: ${isPers ? 'Az én kertem' : 'A Mezítlábas Kert bázisa'}<br>Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} | ${CACHE_VERSION}</div>
             </div>`;
 
+            // FRISSÍTETT GOMB LOGIKA (v4.5.8)
             document.getElementById('locBtn').onclick = () => {
+                const refreshPage = () => {
+                    try {
+                        // Megpróbáljuk frissíteni a teljes blogoldalt (szülő)
+                        if (window.parent && window.parent.location) {
+                            window.parent.location.reload();
+                        } else {
+                            location.reload();
+                        }
+                    } catch (e) {
+                        // Ha Cross-Origin hiba van, akkor csak az iframe frissül
+                        location.reload();
+                    }
+                };
+
                 if (isPers) { 
                     ['garden-lat','garden-lon','garden-weather-cache','last_rain_date'].forEach(k => localStorage.removeItem(k)); 
-                    location.reload(); 
+                    refreshPage();
                 }
                 else { 
                     navigator.geolocation.getCurrentPosition(p => {
                         const {latitude: la, longitude: lo} = p.coords;
                         if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { 
-                            localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); location.reload(); 
+                            localStorage.setItem('garden-lat', la); 
+                            localStorage.setItem('garden-lon', lo); 
+                            refreshPage();
                         } else { 
                             alert("A Kertfigyelő jelenleg csak Magyarország területén tud pontos tanácsokat adni. 🇭🇺"); 
                         }
@@ -253,9 +264,3 @@
     }
     init();
 })();
-
-
-
-
-
-
