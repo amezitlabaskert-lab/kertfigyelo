@@ -1,8 +1,8 @@
 (async function() {
-    const CACHE_VERSION = 'v6.3.2'; 
+    const CACHE_VERSION = 'v6.3.5'; 
     const RAIN_THRESHOLD = 8;
+    const RAIN_NONE = 0.8; // Az érdemi eső küszöbe (UX finomítás a rain_max-hoz)
 
-    // Biztonságos LocalStorage elérés a "Tracking Prevention" ellen
     const safeStorage = {
         getItem: (k) => { try { return localStorage.getItem(k); } catch(e) { return null; } },
         setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) { } },
@@ -67,7 +67,7 @@
             if (msg.includes("{temp_trend}")) {
                 const current = d.temperature_2m_min[idx];
                 const future = d.temperature_2m_min.slice(idx + 1);
-                const absMin = future.length ? Math.min(...future) : current;
+                const absMin = future.length ? Math.min(...future.filter(v => v !== null)) : current;
                 msg = msg.replace("{temp_trend}", (absMin < current - 1.5) ? `, később akár ${Math.round(absMin)}°C-ig is hűlhet` : "");
             }
 
@@ -75,7 +75,7 @@
             if (msg.includes("{wind_trend}")) {
                 const current = d.wind_gusts_10m_max[idx];
                 const future = d.wind_gusts_10m_max.slice(idx + 1);
-                const absMax = future.length ? Math.max(...future) : current;
+                const absMax = future.length ? Math.max(...future.filter(v => v !== null)) : current;
                 msg = msg.replace("{wind_trend}", (absMax > current + 12) ? `, később akár ${Math.round(absMax)} km/h-s lökésekkel` : "");
             }
 
@@ -86,7 +86,7 @@
             if (msg.includes("{rain_trend}")) {
                 const current = d.precipitation_sum[idx];
                 const future = d.precipitation_sum.slice(idx + 1);
-                const absMax = future.length ? Math.max(...future) : current;
+                const absMax = future.length ? Math.max(...future.filter(v => v !== null)) : current;
                 msg = msg.replace("{rain_trend}", (absMax > current + 5) ? `, később akár ${Math.round(absMax)} mm-es esővel` : "");
             }
 
@@ -94,12 +94,12 @@
             if (msg.includes("{snow_trend}")) {
                 const current = d.snowfall_sum[idx];
                 const future = d.snowfall_sum.slice(idx + 1);
-                const absMax = future.length ? Math.max(...future) : current;
+                const absMax = future.length ? Math.max(...future.filter(v => v !== null)) : current;
                 msg = msg.replace("{snow_trend}", (absMax > current + 3) ? `, később akár ${Math.round(absMax * 10) / 10} cm-es hóval` : "");
             }
 
-            if (msg.includes("{soil_temp}")) msg = msg.replace("{soil_temp}", Math.round(d.soil_temperature_6cm[idx]));
-            if (msg.includes("{uv}")) msg = msg.replace("{uv}", d.uv_index_max[idx].toFixed(1));
+            if (msg.includes("{soil_temp}")) msg = msg.replace("{soil_temp}", d.soil_temperature_6cm[idx] !== null ? Math.round(d.soil_temperature_6cm[idx]) : "--");
+            if (msg.includes("{uv}")) msg = msg.replace("{uv}", d.uv_index_max[idx] !== null ? d.uv_index_max[idx].toFixed(1) : "--");
             if (msg.includes("{days}")) msg = msg.replace("{days}", dryDays);
             
             if (msg.includes("{next_rain}")) {
@@ -113,45 +113,69 @@
         return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
     }
 
+    // 🟢 JAVÍTOTT checkCondition: snow_max és rain_max támogatás
     function checkCondition(weather, idx, key, val, dryDays) {
         const d = weather.daily;
         if (key.includes('temp_max_below')) return d.temperature_2m_max[idx] <= val;
         if (key.includes('temp_min_below') || key.includes('temp_below')) return d.temperature_2m_min[idx] <= val;
         if (key.includes('temp_min_above')) return d.temperature_2m_min[idx] >= val;
         if (key.includes('temp_above')) return d.temperature_2m_max[idx] >= val;
-        if (key.includes('soil_temp_above')) return d.soil_temperature_6cm[idx] >= val;
-        if (key.includes('soil_temp_below')) return d.soil_temperature_6cm[idx] <= val;
+        if (key.includes('soil_temp_above')) return d.soil_temperature_6cm[idx] !== null && d.soil_temperature_6cm[idx] >= val;
+        if (key.includes('soil_temp_below')) return d.soil_temperature_6cm[idx] !== null && d.soil_temperature_6cm[idx] <= val;
         if (key.includes('rain_min') || key.includes('precip_min')) return d.precipitation_sum[idx] >= val;
-        if (key.includes('rain_max') || key.includes('precip_max')) return d.precipitation_sum[idx] <= val;
-        if (key.includes('evap_above')) return d.et0_fao_evapotranspiration[idx] >= val;
-        if (key.includes('wind_gusts')) return d.wind_gusts_10m_max[idx] >= val;
+        if (key.includes('rain_max') || key.includes('precip_max')) return d.precipitation_sum[idx] <= Math.max(val, RAIN_NONE);
+        if (key.includes('wind_gusts_min')) return d.wind_gusts_10m_max[idx] >= val;
+        if (key.includes('wind_gusts_max')) return d.wind_gusts_10m_max[idx] <= val;
         if (key.includes('wind_max')) return d.wind_speed_10m_max[idx] <= val;
-        if (key.includes('snow')) return d.snowfall_sum[idx] >= val;
-        if (key.includes('uv_above')) return d.uv_index_max[idx] >= val;
+        if (key.includes('snow_min')) return d.snowfall_sum[idx] >= val;
+        if (key.includes('snow_max')) return d.snowfall_sum[idx] <= val;
+        if (key.includes('snow')) return d.snowfall_sum[idx] >= val; // fallback
+        if (key.includes('uv_above')) return d.uv_index_max[idx] !== null && d.uv_index_max[idx] >= val;
         if (key === 'days_min') return dryDays >= val;
         if (key === 'days_max') return dryDays <= val;
-        if (key.endsWith('_any')) return checkCondition(weather, idx, key.replace('_any', ''), val, dryDays);
         return true;
     }
 
+    // 🟢 JAVÍTOTT checkSustained: _any logika pásztázza a múltat
     function checkSustained(weather, dayIdx, rule, dryDays) {
         const cond = rule.conditions || {};
-        const d = weather.daily;
+        
+        // _any kezelése: az elmúlt napokban (múltbeli adatok között) keressük a feltételt
+        for (const key in cond) {
+            if (key.endsWith('_any')) {
+                const baseKey = key.replace('_any', '');
+                let foundAny = false;
+                // Átpásztázzuk a múltat a mai napig (7-es indexig)
+                for (let i = 0; i <= 7; i++) {
+                    if (checkCondition(weather, i, baseKey, cond[key], dryDays)) {
+                        foundAny = true;
+                        break;
+                    }
+                }
+                if (!foundAny) return false;
+            }
+        }
+
         if (rule.category === 'check') {
             for (let i = 0; i <= 1; i++) {
                 const cIdx = dayIdx - i;
                 if (cIdx < 0) continue;
                 let match = true;
-                for (const key in cond) if (!checkCondition(weather, cIdx, key, cond[key], dryDays)) match = false;
+                for (const key in cond) {
+                    if (key.endsWith('_any')) continue;
+                    if (!checkCondition(weather, cIdx, key, cond[key], dryDays)) match = false;
+                }
                 if (match) return true;
             }
             return false;
         }
+
         if (cond.days_min !== undefined && dryDays < cond.days_min) return false;
         const days = (cond.days_min && !cond.temp_above) ? 1 : (cond.days_min || 1);
         if (dayIdx < days - 1) return false;
+
         for (const key in cond) {
-            if (key === 'days_min' || key === 'days_max') continue; 
+            if (key === 'days_min' || key === 'days_max' || key.endsWith('_any')) continue; 
             for (let j = 0; j < days; j++) if (!checkCondition(weather, dayIdx - j, key, cond[key], dryDays)) return false;
         }
         return true;
@@ -177,12 +201,29 @@
             }
 
             if (!weather) {
-                // TISZTÍTOTT URL (nincs &v= a végén, hogy elkerüljük a 400 Bad Request-et)
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max,soil_temperature_6cm,et0_fao_evapotranspiration,uv_index_max&past_days=7&timezone=auto`;
-                const resp = await fetch(url);
-                if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
-                weather = await resp.json();
-                if (!weather || !weather.daily) throw new Error("No daily data from API");
+                const urlBase = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum&past_days=7&timezone=auto`;
+                const urlExtra = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=soil_temperature_6cm,et0_fao_evapotranspiration,uv_index_max,precipitation_probability_max&timezone=auto`;
+
+                const [respBase, respExtra] = await Promise.all([
+                    fetch(urlBase, { referrerPolicy: "no-referrer" }),
+                    fetch(urlExtra, { referrerPolicy: "no-referrer" })
+                ]);
+
+                if (!respBase.ok || !respExtra.ok) throw new Error("API hiba");
+
+                const dataBase = await respBase.json();
+                const dataExtra = await respExtra.json();
+
+                weather = dataBase;
+                const daily = weather.daily;
+                const extra = dataExtra.daily;
+                const pad = new Array(7).fill(null);
+                
+                daily.soil_temperature_6cm = [...pad, ...extra.soil_temperature_6cm];
+                daily.et0_fao_evapotranspiration = [...pad, ...extra.et0_fao_evapotranspiration];
+                daily.uv_index_max = [...pad, ...extra.uv_index_max];
+                daily.precipitation_probability_max = [...pad, ...extra.precipitation_probability_max];
+
                 lastUpdate = new Date();
                 safeStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather }));
             }
