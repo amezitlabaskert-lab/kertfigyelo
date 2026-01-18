@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v6.3.8'; 
+    const CACHE_VERSION = 'v6.3.9'; 
     const RAIN_THRESHOLD = 8;
     const RAIN_NONE = 0.8; 
 
@@ -78,7 +78,7 @@
                 if (rIdx !== -1) {
                     const rainDate = new Date(d.time[rIdx + 7]);
                     msg = msg.replace("{next_rain}", rIdx === 0 ? "Ma esik!" : `Eső: ${rainDate.toLocaleDateString('hu-HU',{weekday:'long'})}.`);
-                } else msg = msg.replace("{next_rain}", "Nincs eső.");
+                } else msg = msg.replace("{next_rain}", "Nincs eső a láthatáron.");
             }
         } catch(e) { console.warn("Msg error", e); }
         return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
@@ -157,15 +157,24 @@
             }
 
             if (!weather) {
-                // JAVÍTOTT PARAMÉTEREK: Vesszővel elválasztott lista, pontos nevekkel
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,wind_gusts_10m_max,soil_temperature_6cm,uv_index_max,precipitation_probability_max&past_days=7&timezone=auto`;
+                // HYBRID URL: soil_temperature_6cm az hourly listába került!
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,wind_gusts_10m_max,uv_index_max,precipitation_probability_max&hourly=soil_temperature_6cm&past_days=7&timezone=auto`;
                 
                 const resp = await fetch(url);
                 if (!resp.ok) {
                     const err = await resp.json();
                     throw new Error(err.reason || "Open-Meteo hiba");
                 }
-                weather = await resp.json();
+                const rawData = await resp.json();
+
+                // Adat-transzformáció: Hourly -> Daily (minden nap déli értékét vesszük)
+                rawData.daily.soil_temperature_6cm = [];
+                for (let i = 0; i < rawData.daily.time.length; i++) {
+                    const hourIdx = i * 24 + 12; // A nap 12:00 órája
+                    rawData.daily.soil_temperature_6cm.push(rawData.hourly.soil_temperature_6cm[hourIdx] ?? null);
+                }
+
+                weather = rawData;
                 safeStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: Date.now(), data: weather }));
             }
 
