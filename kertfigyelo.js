@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v6.1'; 
+    const CACHE_VERSION = 'v6.2'; 
     const RAIN_THRESHOLD = 8;
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -50,7 +50,7 @@
 
     const noon = d => new Date(d).setHours(12,0,0,0);
 
-    function processMessage(msg, weather, dryDays) {
+    function processMessage(msg, weather, dryDays, isCheckCategory) {
         if (!msg) return "";
         try {
             const d = weather.daily;
@@ -61,6 +61,13 @@
             if (msg.includes("{uv}")) msg = msg.replace("{uv}", Math.max(...d.uv_index_max.slice(7)).toFixed(1));
             if (msg.includes("{days}")) msg = msg.replace("{days}", dryDays);
             
+            // ESŐ placeholder kezelése
+            if (msg.includes("{rain}")) {
+                // Ha visszatekintő szemle, a múltat nézzük, különben a jövőt
+                const rainData = isCheckCategory ? d.precipitation_sum.slice(0, 8) : d.precipitation_sum.slice(7);
+                msg = msg.replace("{rain}", Math.round(Math.max(...rainData)));
+            }
+
             if (msg.includes("{next_rain}")) {
                 const idx = d.precipitation_sum.slice(7).findIndex(r => r >= 1);
                 if (idx !== -1) {
@@ -139,7 +146,17 @@
             }
 
             const todayIdx = 7;
-            if (weather.daily.precipitation_sum[todayIdx] >= RAIN_THRESHOLD) localStorage.setItem('last_rain_date', weather.daily.time[todayIdx]);
+            // ASZÁLY JAVÍTÁS: Nézzük meg a múltbeli napokat is, ha ma nem esett
+            for (let i = 0; i <= 7; i++) {
+                if (weather.daily.precipitation_sum[i] >= RAIN_THRESHOLD) {
+                    const rainDate = weather.daily.time[i];
+                    const savedRain = localStorage.getItem('last_rain_date');
+                    if (!savedRain || new Date(rainDate) > new Date(savedRain)) {
+                        localStorage.setItem('last_rain_date', rainDate);
+                    }
+                }
+            }
+            
             const lastRain = localStorage.getItem('last_rain_date');
             const dryDays = lastRain ? Math.floor(Math.abs(new Date() - new Date(lastRain)) / 86400000) : 0;
 
@@ -176,7 +193,7 @@
                 const badgeClass = item.category === "seasonal" ? 'type-szezon' : (item.category === "check" ? 'type-szemle' : (diff <= 0 ? 'time-urgent' : (diff === 1 ? 'time-warning' : 'time-soon')));
                 let rangeStr = `<span class="time-badge ${badgeClass}">${label}</span>`;
                 if (!["seasonal", "check"].includes(item.category) && noon(item.start) !== noon(item.end)) rangeStr += ` — ${new Date(item.end).toLocaleDateString('hu-HU',{month:'short',day:'numeric'}).toUpperCase()}`;
-                return { title: item.name, range: rangeStr, msg: processMessage(item.message, weather, dryDays), type: item.type };
+                return { title: item.name, range: rangeStr, msg: processMessage(item.message, weather, dryDays, item.category === "check"), type: item.type };
             };
 
             const alerts = filtered.filter(r => r.type === 'alert').map(mapToResult);
