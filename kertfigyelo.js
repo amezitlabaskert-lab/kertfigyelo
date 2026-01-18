@@ -1,8 +1,7 @@
 (async function() {
-    const CACHE_VERSION = 'v5.0'; 
+    const CACHE_VERSION = 'v6.1'; 
     const RAIN_THRESHOLD = 8;
 
-    // 1. URL PARAMÉTEREK AZONNALI KEZELÉSE
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
         localStorage.setItem('garden-lat', urlParams.get('lat'));
@@ -54,15 +53,19 @@
     function processMessage(msg, weather, dryDays) {
         if (!msg) return "";
         try {
-            if (msg.includes("{temp}")) msg = msg.replace("{temp}", Math.round(Math.min(...weather.daily.temperature_2m_min.slice(7))));
-            if (msg.includes("{wind}")) msg = msg.replace("{wind}", Math.round(Math.max(...weather.daily.wind_gusts_10m_max.slice(7))));
-            if (msg.includes("{snow}")) msg = msg.replace("{snow}", Math.round(Math.max(...weather.daily.snowfall_sum.slice(7)) * 10) / 10);
+            const d = weather.daily;
+            if (msg.includes("{temp}")) msg = msg.replace("{temp}", Math.round(Math.min(...d.temperature_2m_min.slice(7))));
+            if (msg.includes("{soil_temp}")) msg = msg.replace("{soil_temp}", Math.round(d.soil_temperature_6cm.slice(7)[0]));
+            if (msg.includes("{wind}")) msg = msg.replace("{wind}", Math.round(Math.max(...d.wind_gusts_10m_max.slice(7))));
+            if (msg.includes("{snow}")) msg = msg.replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(7)) * 10) / 10);
+            if (msg.includes("{uv}")) msg = msg.replace("{uv}", Math.max(...d.uv_index_max.slice(7)).toFixed(1));
             if (msg.includes("{days}")) msg = msg.replace("{days}", dryDays);
+            
             if (msg.includes("{next_rain}")) {
-                const idx = weather.daily.precipitation_sum.slice(7).findIndex(r => r >= 1);
+                const idx = d.precipitation_sum.slice(7).findIndex(r => r >= 1);
                 if (idx !== -1) {
-                    const d = new Date(weather.daily.time[idx + 7]);
-                    msg = msg.replace("{next_rain}", idx === 0 ? "Ma esik!" : `Eső: ${d.toLocaleDateString('hu-HU',{weekday:'long'})} (${Math.round(weather.daily.precipitation_sum[idx + 7])}mm).`);
+                    const rainDate = new Date(d.time[idx + 7]);
+                    msg = msg.replace("{next_rain}", idx === 0 ? "Ma esik!" : `Eső: ${rainDate.toLocaleDateString('hu-HU',{weekday:'long'})} (${Math.round(d.precipitation_sum[idx + 7])}mm).`);
                 } else msg = msg.replace("{next_rain}", "Nincs eső a láthatáron.");
             }
         } catch(e) { console.warn("Msg error", e); }
@@ -71,17 +74,22 @@
 
     function checkCondition(weather, idx, key, val, dryDays) {
         const d = weather.daily;
-        if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
-        if (key === 'temp_min_below' || key === 'temp_below') return d.temperature_2m_min[idx] <= val;
-        if (key === 'temp_min_above') return d.temperature_2m_min[idx] >= val;
-        if (key === 'temp_above') return d.temperature_2m_max[idx] >= val;
-        if (key.startsWith('rain_min')) return d.precipitation_sum[idx] >= val;
-        if (key.startsWith('rain_max')) return d.precipitation_sum[idx] <= val;
+        if (key.includes('temp_max_below')) return d.temperature_2m_max[idx] <= val;
+        if (key.includes('temp_min_below') || key.includes('temp_below')) return d.temperature_2m_min[idx] <= val;
+        if (key.includes('temp_min_above')) return d.temperature_2m_min[idx] >= val;
+        if (key.includes('temp_above')) return d.temperature_2m_max[idx] >= val;
+        if (key.includes('soil_temp_above')) return d.soil_temperature_6cm[idx] >= val;
+        if (key.includes('soil_temp_below')) return d.soil_temperature_6cm[idx] <= val;
+        if (key.includes('rain_min') || key.includes('precip_min')) return d.precipitation_sum[idx] >= val;
+        if (key.includes('rain_max') || key.includes('precip_max')) return d.precipitation_sum[idx] <= val;
+        if (key.includes('evap_above')) return d.et0_fao_evapotranspiration[idx] >= val;
         if (key.includes('wind_gusts')) return d.wind_gusts_10m_max[idx] >= val;
-        if (key === 'wind_max') return d.wind_speed_10m_max[idx] <= val;
+        if (key.includes('wind_max')) return d.wind_speed_10m_max[idx] <= val;
         if (key.includes('snow')) return d.snowfall_sum[idx] >= val;
+        if (key.includes('uv_above')) return d.uv_index_max[idx] >= val;
         if (key === 'days_min') return dryDays >= val;
         if (key === 'days_max') return dryDays <= val;
+        if (key.endsWith('_any')) return checkCondition(weather, idx, key.replace('_any', ''), val, dryDays);
         return true;
     }
 
@@ -112,7 +120,6 @@
         if (!widgetDiv) return;
 
         try {
-            // KOORDINÁTÁK FRISSÍTÉSE
             let lat = Number(localStorage.getItem('garden-lat')) || 47.5136;
             let lon = Number(localStorage.getItem('garden-lon')) || 19.3735;
             let isPers = !!localStorage.getItem('garden-lat');
@@ -125,7 +132,7 @@
             }
 
             if (!weather) {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max&past_days=7&timezone=auto&v=${Date.now()}`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max,soil_temperature_6cm,et0_fao_evapotranspiration,uv_index_max&past_days=7&timezone=auto&v=${Date.now()}`;
                 weather = await (await fetch(url)).json();
                 lastUpdate = new Date();
                 localStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather }));
@@ -192,7 +199,7 @@
                 } else { 
                     navigator.geolocation.getCurrentPosition(p => {
                         const {latitude: la, longitude: lo} = p.coords;
-                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { 
+                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) {
                             localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); localStorage.removeItem('garden-weather-cache');
                             window.parent.postMessage({ type: 'GARDEN_LOCATION_CHANGED', lat: la, lon: lo }, '*');
                             location.reload(); 
@@ -202,7 +209,7 @@
             };
             const setup = (id, len) => { if (len <= 1) return; const items = document.querySelectorAll(`#${id}-carousel .carousel-item`); let i = 0; setInterval(() => { if(items[i]) items[i].classList.remove('active'); i = (i + 1) % len; if(items[i]) items[i].classList.add('active'); }, 8000); };
             setup('alert', alerts.length); setup('tasks', others.length);
-        } catch(e) { widgetDiv.innerHTML = `<div style="padding:40px 20px; text-align:center; background:white;"><button onclick="location.reload()">FRISSÍTÉS</button></div>`; }
+        } catch(e) { console.error(e); widgetDiv.innerHTML = `<div style="padding:40px 20px; text-align:center; background:white;"><button onclick="location.reload()">FRISSÍTÉS</button></div>`; }
     }
 
     function renderZone(items, id) {
@@ -211,6 +218,3 @@
     }
     init();
 })();
-
-
-
