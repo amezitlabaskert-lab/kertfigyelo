@@ -1,12 +1,19 @@
 (async function() {
-    const CACHE_VERSION = 'v6.3.1'; 
+    const CACHE_VERSION = 'v6.3.2'; 
     const RAIN_THRESHOLD = 8;
+
+    // Biztonságos LocalStorage elérés a "Tracking Prevention" ellen
+    const safeStorage = {
+        getItem: (k) => { try { return localStorage.getItem(k); } catch(e) { return null; } },
+        setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) { } },
+        removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) { } }
+    };
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
-        localStorage.setItem('garden-lat', urlParams.get('lat'));
-        localStorage.setItem('garden-lon', urlParams.get('lon'));
-        localStorage.removeItem('garden-weather-cache');
+        safeStorage.setItem('garden-lat', urlParams.get('lat'));
+        safeStorage.setItem('garden-lon', urlParams.get('lon'));
+        safeStorage.removeItem('garden-weather-cache');
     }
 
     const fontLink = document.createElement('link');
@@ -155,12 +162,12 @@
         if (!widgetDiv) return;
 
         try {
-            let lat = Number(localStorage.getItem('garden-lat')) || 47.5136;
-            let lon = Number(localStorage.getItem('garden-lon')) || 19.3735;
-            let isPers = !!localStorage.getItem('garden-lat');
+            let lat = Number(safeStorage.getItem('garden-lat')) || 47.5136;
+            let lon = Number(safeStorage.getItem('garden-lon')) || 19.3735;
+            let isPers = !!safeStorage.getItem('garden-lat');
 
             let weather, lastUpdate;
-            const cached = localStorage.getItem('garden-weather-cache');
+            const cached = safeStorage.getItem('garden-weather-cache');
             if (cached) {
                 const p = JSON.parse(cached);
                 if (p.version === CACHE_VERSION && p.data && p.data.daily && Date.now() - p.ts < 1800000) { 
@@ -170,12 +177,14 @@
             }
 
             if (!weather) {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max,soil_temperature_6cm,et0_fao_evapotranspiration,uv_index_max&past_days=7&timezone=auto&v=${Date.now()}`;
+                // TISZTÍTOTT URL (nincs &v= a végén, hogy elkerüljük a 400 Bad Request-et)
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max,soil_temperature_6cm,et0_fao_evapotranspiration,uv_index_max&past_days=7&timezone=auto`;
                 const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
                 weather = await resp.json();
                 if (!weather || !weather.daily) throw new Error("No daily data from API");
                 lastUpdate = new Date();
-                localStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather }));
+                safeStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather }));
             }
 
             const todayIdx = 7;
@@ -183,12 +192,12 @@
             for (let i = 0; i <= todayIdx; i++) {
                 if (daily.precipitation_sum && daily.precipitation_sum[i] >= RAIN_THRESHOLD) {
                     const rainDate = daily.time[i];
-                    const savedRain = localStorage.getItem('last_rain_date');
-                    if (!savedRain || new Date(rainDate) > new Date(savedRain)) localStorage.setItem('last_rain_date', rainDate);
+                    const savedRain = safeStorage.getItem('last_rain_date');
+                    if (!savedRain || new Date(rainDate) > new Date(savedRain)) safeStorage.setItem('last_rain_date', rainDate);
                 }
             }
             
-            const lastRain = localStorage.getItem('last_rain_date');
+            const lastRain = safeStorage.getItem('last_rain_date');
             const dryDays = lastRain ? Math.floor(Math.abs(new Date() - new Date(lastRain)) / 86400000) : 0;
 
             const rules = await (await fetch('https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo_esemenyek.json?v=' + Date.now())).json();
@@ -243,14 +252,14 @@
 
             document.getElementById('locBtn').onclick = () => {
                 if (isPers) { 
-                    ['garden-lat','garden-lon','garden-weather-cache','last_rain_date'].forEach(k => localStorage.removeItem(k)); 
+                    ['garden-lat','garden-lon','garden-weather-cache','last_rain_date'].forEach(k => safeStorage.removeItem(k)); 
                     window.parent.postMessage({ type: 'GARDEN_LOCATION_CHANGED', lat: 47.5136, lon: 19.3735 }, '*');
                     location.reload(); 
                 } else { 
                     navigator.geolocation.getCurrentPosition(p => {
                         const {latitude: la, longitude: lo} = p.coords;
                         if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) {
-                            localStorage.setItem('garden-lat', la); localStorage.setItem('garden-lon', lo); localStorage.removeItem('garden-weather-cache');
+                            safeStorage.setItem('garden-lat', la); safeStorage.setItem('garden-lon', lo); safeStorage.removeItem('garden-weather-cache');
                             window.parent.postMessage({ type: 'GARDEN_LOCATION_CHANGED', lat: la, lon: lo }, '*');
                             location.reload(); 
                         } else alert("Csak Magyarország területén működik. 🇭🇺");
