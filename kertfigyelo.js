@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v6.3'; 
+    const CACHE_VERSION = 'v6.3.1'; 
     const RAIN_THRESHOLD = 8;
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -51,13 +51,11 @@
     const noon = d => new Date(d).setHours(12,0,0,0);
 
     function processMessage(msg, weather, dryDays, isCheckCategory, targetIdx) {
-        if (!msg) return "";
+        if (!msg || !weather || !weather.daily) return "";
         try {
             const d = weather.daily;
-            // Claude-féle biztonsági index ellenőrzés
             const idx = (targetIdx !== undefined && targetIdx >= 0 && targetIdx < d.time.length) ? targetIdx : 7;
             
-            // HŐMÉRSÉKLET + TREND
             if (msg.includes("{temp}")) msg = msg.replace("{temp}", Math.round(d.temperature_2m_min[idx]));
             if (msg.includes("{temp_trend}")) {
                 const current = d.temperature_2m_min[idx];
@@ -66,7 +64,6 @@
                 msg = msg.replace("{temp_trend}", (absMin < current - 1.5) ? `, később akár ${Math.round(absMin)}°C-ig is hűlhet` : "");
             }
 
-            // SZÉL + TREND
             if (msg.includes("{wind}")) msg = msg.replace("{wind}", Math.round(d.wind_gusts_10m_max[idx]));
             if (msg.includes("{wind_trend}")) {
                 const current = d.wind_gusts_10m_max[idx];
@@ -75,7 +72,6 @@
                 msg = msg.replace("{wind_trend}", (absMax > current + 12) ? `, később akár ${Math.round(absMax)} km/h-s lökésekkel` : "");
             }
 
-            // ESŐ + TREND (Claude-féle kiegészítés)
             if (msg.includes("{rain}")) {
                 const rainVal = isCheckCategory ? Math.max(...d.precipitation_sum.slice(0, 8)) : d.precipitation_sum[idx];
                 msg = msg.replace("{rain}", Math.round(rainVal));
@@ -87,7 +83,6 @@
                 msg = msg.replace("{rain_trend}", (absMax > current + 5) ? `, később akár ${Math.round(absMax)} mm-es esővel` : "");
             }
 
-            // HÓ + TREND
             if (msg.includes("{snow}")) msg = msg.replace("{snow}", Math.round(d.snowfall_sum[idx] * 10) / 10);
             if (msg.includes("{snow_trend}")) {
                 const current = d.snowfall_sum[idx];
@@ -96,7 +91,6 @@
                 msg = msg.replace("{snow_trend}", (absMax > current + 3) ? `, később akár ${Math.round(absMax * 10) / 10} cm-es hóval` : "");
             }
 
-            // EGYÉB FIX ADATOK
             if (msg.includes("{soil_temp}")) msg = msg.replace("{soil_temp}", Math.round(d.soil_temperature_6cm[idx]));
             if (msg.includes("{uv}")) msg = msg.replace("{uv}", d.uv_index_max[idx].toFixed(1));
             if (msg.includes("{days}")) msg = msg.replace("{days}", dryDays);
@@ -111,9 +105,6 @@
         } catch(e) { console.warn("Msg error", e); }
         return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
     }
-
-    // --- A többi motorikus rész (checkCondition, checkSustained, init) marad a korábbi logikával, 
-    // de a mapToResult-ban most már átadjuk a targetIdx-et! ---
 
     function checkCondition(weather, idx, key, val, dryDays) {
         const d = weather.daily;
@@ -138,6 +129,7 @@
 
     function checkSustained(weather, dayIdx, rule, dryDays) {
         const cond = rule.conditions || {};
+        const d = weather.daily;
         if (rule.category === 'check') {
             for (let i = 0; i <= 1; i++) {
                 const cIdx = dayIdx - i;
@@ -171,20 +163,26 @@
             const cached = localStorage.getItem('garden-weather-cache');
             if (cached) {
                 const p = JSON.parse(cached);
-                if (p.version === CACHE_VERSION && Date.now() - p.ts < 1800000) { weather = p.data; lastUpdate = new Date(p.ts); }
+                if (p.version === CACHE_VERSION && p.data && p.data.daily && Date.now() - p.ts < 1800000) { 
+                    weather = p.data; 
+                    lastUpdate = new Date(p.ts); 
+                }
             }
 
             if (!weather) {
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max,soil_temperature_6cm,et0_fao_evapotranspiration,uv_index_max&past_days=7&timezone=auto&v=${Date.now()}`;
-                weather = await (await fetch(url)).json();
+                const resp = await fetch(url);
+                weather = await resp.json();
+                if (!weather || !weather.daily) throw new Error("No daily data from API");
                 lastUpdate = new Date();
                 localStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather }));
             }
 
             const todayIdx = 7;
-            for (let i = 0; i <= 7; i++) {
-                if (weather.daily.precipitation_sum[i] >= RAIN_THRESHOLD) {
-                    const rainDate = weather.daily.time[i];
+            const daily = weather.daily;
+            for (let i = 0; i <= todayIdx; i++) {
+                if (daily.precipitation_sum && daily.precipitation_sum[i] >= RAIN_THRESHOLD) {
+                    const rainDate = daily.time[i];
                     const savedRain = localStorage.getItem('last_rain_date');
                     if (!savedRain || new Date(rainDate) > new Date(savedRain)) localStorage.setItem('last_rain_date', rainDate);
                 }
@@ -199,19 +197,19 @@
             rules.forEach(rule => {
                 if (!rule.id) return;
                 let range = null;
-                let targetIdx = null; // Mentjük, melyik nap váltotta ki először
-                for (let i = todayIdx; i < weather.daily.time.length; i++) {
-                    const d = new Date(weather.daily.time[i]);
+                let tIdx = null; 
+                for (let i = todayIdx; i < daily.time.length; i++) {
+                    const d = new Date(daily.time[i]);
                     const inSeason = !rule.seasons || rule.seasons.some(s => {
                         const [sM, sD] = s.start.split('-').map(Number), [eM, eD] = s.end.split('-').map(Number);
                         const sDate = new Date(d.getFullYear(), sM-1, sD), eDate = new Date(d.getFullYear(), eM-1, eD);
                         return eDate < sDate ? (d >= sDate || d <= eDate) : (d >= sDate && d <= eDate);
                     });
                     if (inSeason && checkSustained(weather, i, rule, dryDays)) {
-                        if (!range) { range = { start: d, end: d }; targetIdx = i; } else range.end = d;
+                        if (!range) { range = { start: d, end: d }; tIdx = i; } else range.end = d;
                     } else if (range) break;
                 }
-                if (range) rawResults.push({ ...rule, start: range.start, end: range.end, targetIdx: targetIdx });
+                if (range) rawResults.push({ ...rule, start: range.start, end: range.end, targetIdx: tIdx });
             });
 
             const groupWinners = {};
@@ -228,7 +226,6 @@
                 let rangeStr = `<span class="time-badge ${badgeClass}">${label}</span>`;
                 if (!["seasonal", "check"].includes(item.category) && noon(item.start) !== noon(item.end)) rangeStr += ` — ${new Date(item.end).toLocaleDateString('hu-HU',{month:'short',day:'numeric'}).toUpperCase()}`;
                 
-                // Itt hívjuk a processMessage-t a targetIdx-szel!
                 return { title: item.name, range: rangeStr, msg: processMessage(item.message, weather, dryDays, item.category === "check", item.targetIdx), type: item.type };
             };
 
