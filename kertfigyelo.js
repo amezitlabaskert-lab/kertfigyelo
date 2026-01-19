@@ -1,5 +1,5 @@
 (async function() {
-    const CACHE_VERSION = 'v6.3.12'; 
+    const CACHE_VERSION = 'v6.3.13'; 
     const RAIN_THRESHOLD = 8;
 
     const safeStorage = {
@@ -65,7 +65,7 @@
             if (msg.includes("{wind}")) msg = msg.replace("{wind}", Math.round(d.wind_gusts_10m_max[idx]));
             if (msg.includes("{snow}")) msg = msg.replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(idx-2, idx+1)) * 10) / 10);
             if (msg.includes("{days}")) msg = msg.replace("{days}", dryDays);
-            if (msg.includes("{soil_temp}")) msg = msg.replace("{soil_temp}", d.soil_temperature_6cm ? Math.round(d.soil_temperature_6cm[idx]) : "--");
+            if (msg.includes("{soil_temp}")) msg = msg.replace("{soil_temp}", d.soil_temperature_6cm[idx] !== null ? Math.round(d.soil_temperature_6cm[idx]) : "--");
             if (msg.includes("{temp_trend}")) {
                 const diff = d.temperature_2m_min[idx] - d.temperature_2m_min[idx-1];
                 msg = msg.replace("{temp_trend}", diff <= -2.5 ? " (erősen hűl)" : (diff >= 2.5 ? " (enyhül)" : ""));
@@ -76,6 +76,9 @@
 
     function checkCondition(weather, idx, key, val, dryDays) {
         const d = weather.daily;
+        if (!d || idx < 0) return false;
+        
+        // FONTOS: Csak akkor adjunk true-t, ha a feltétel tényleg teljesül!
         if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
         if (key === 'temp_min_below' || key === 'temp_below') return d.temperature_2m_min[idx] <= val;
         if (key === 'temp_min_above') return d.temperature_2m_min[idx] >= val;
@@ -84,10 +87,12 @@
         if (key === 'soil_temp_below') return d.soil_temperature_6cm && d.soil_temperature_6cm[idx] <= val;
         if (key.startsWith('rain_min')) return d.precipitation_sum[idx] >= val;
         if (key.startsWith('rain_max')) return d.precipitation_sum[idx] <= val;
+        if (key.includes('wind_gusts')) return d.wind_gusts_10m_max[idx] >= val;
         if (key.includes('snow')) return d.snowfall_sum[idx] >= val;
         if (key === 'days_min') return dryDays >= val;
         if (key === 'days_max') return dryDays <= val;
-        return true;
+        
+        return false; // Alapértelmezett: ha ismeretlen a kulcs vagy nem teljesül, ne legyen aktív
     }
 
     function checkSustained(weather, dayIdx, rule, dryDays) {
@@ -128,7 +133,6 @@
             if (!weather) {
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max&hourly=soil_temperature_6cm&past_days=7&timezone=auto`;
                 const resp = await fetch(url);
-                if(!resp.ok) { const err = await resp.json(); throw new Error(err.reason || "API hiba"); }
                 const rawData = await resp.json();
                 rawData.daily.soil_temperature_6cm = [];
                 for (let i = 0; i < rawData.daily.time.length; i++) {
