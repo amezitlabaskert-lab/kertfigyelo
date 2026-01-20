@@ -156,7 +156,7 @@
   {
     "_comment": "15.",
     "id": "sun-ebredes",
-    "name": "🦔 Süni ébredezés",
+    "name": "🦔 Süni ébredés",
     "type": "alert",
     "group": "sun-szerviz",
     "priority": 10,
@@ -237,8 +237,8 @@
     "priority": 10,
     "category": "weather",
     "seasons": [ { "start": "03-20", "end": "04-30" } ],
-    "conditions": { "temp_above": 12, "rain_max": 0, "days_min": 2 },
-    "message": "Már elég meleg a talaj a gyepszellőztetéshez. Száraz időben végezd, utána jöhet a tápanyag!"
+    "conditions": { "soil_temp_above": 10, "rain_max": 0, "days_min": 2 },
+    "message": "Már elég meleg a talaj ({soil_temp}°C) a gyepszellőztetéshez. Száraz időben végezd, utána jöhet a tápanyag!"
   },
   {
     "_comment": "23.",
@@ -249,8 +249,8 @@
     "priority": 5,
     "category": "weather",
     "seasons": [ { "start": "03-01", "end": "05-15" } ],
-    "conditions": { "temp_above": 8, "rain_max": 0 },
-    "message": "Tavaszi, nitrogénbombás indító trágyázás: száraz fűre szórd ki, majd utána alaposan öntözd be!"
+    "conditions": { "soil_temp_above": 8, "rain_max": 0 },
+    "message": "Tavaszi, nitrogénbombás indító trágyázás ({soil_temp}°C talajnál): száraz fűre szórd ki, majd utána alaposan öntözd be!"
   },
   {
     "_comment": "24.",
@@ -319,7 +319,7 @@
     "type": "none",
     "category": "seasonal",
     "seasons": [ { "start": "03-01", "end": "05-31" } ],
-    "message": "Figyeld az első rügyeket! Kezdődik a tavaszi zsongás."
+    "message": "Figyeld a első rügyeket! Kezdődik a tavaszi zsongás."
   },
   {
     "_comment": "31.",
