@@ -48,7 +48,7 @@
         .time-soon { background: #64748b; }
         .garden-footer { text-align: center; font-size: 10px; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); opacity: 0.6; }
         .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; font-weight: 800; border: none; background: #475569; color: white; animation: pulse-invitation 3s infinite; text-transform: uppercase; }
-        .refresh-btn { width: 100%; padding: 6px; font-size: 9px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; margin-bottom: 5px; cursor: pointer; font-weight: 700; }
+        .refresh-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #cbd5e1; cursor: pointer; padding: 5px; z-index: 10; transition: color 0.3s; display: flex; align-items: center; justify-content: center; } .refresh-btn:hover { color: #64748b; } .refresh-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     `;
     document.head.appendChild(styleSheet);
 
@@ -199,7 +199,7 @@
             widgetDiv.innerHTML = `<div class="garden-main-card">
                 <div class="garden-title">${isPers ? 'Kertfigyelőm' : 'Kertfigyelő'}</div>
                 <button id="locBtn" class="loc-btn">${isPers ? 'Vissza az alaphoz' : 'Saját kertfigyelőt!'}</button>
-                <button id="refBtn" class="refresh-btn">🔄 ADATOK FRISSÍTÉSE</button>
+                <button id="refBtn" class="refresh-btn" title="Adatok frissítése"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
                 <div class="section-title">Riasztások</div>${renderZone(alerts, 'alert')}
                 <div class="section-title">Teendők & Info</div>${renderZone(others, 'tasks')}
                 <div class="garden-footer">Helyszín: ${isPers ? 'A kertem' : 'A Mezítlábas Kert bázisa'}<br>Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} | ${CACHE_VERSION}</div>
@@ -238,5 +238,6 @@
     document.head.appendChild(fontLink);
     init();
 })();
+
 
 
