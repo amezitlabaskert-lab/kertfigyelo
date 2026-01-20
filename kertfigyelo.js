@@ -61,16 +61,16 @@
             const d = weather.daily, idx = targetIdx || 7;
             const diff = (arr) => (arr[idx] || 0) - (arr[idx-1] || 0);
 
-            msg = msg.replace("{temp}", Math.round(d.temperature_2m_min[idx]))
-                     .replace("{wind}", Math.round(d.wind_gusts_10m_max[idx]))
-                     .replace("{rain}", Math.round(d.precipitation_sum[idx]))
-                     .replace("{days}", dryDays)
-                     .replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
-                     .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
-                     .replace("{temp_trend}", diff(d.temperature_2m_min) <= -2.5 ? " (erősen hűl)" : (diff(d.temperature_2m_min) >= 2.5 ? " (enyhül)" : ""))
-                     .replace("{wind_trend}", diff(d.wind_gusts_10m_max) >= 10 ? " (erősödik)" : (diff(d.wind_gusts_10m_max) <= -10 ? " (csendesedik)" : ""))
-                     .replace("{rain_trend}", diff(d.precipitation_sum) >= 5 ? " (fokozódik)" : (diff(d.precipitation_sum) <= -5 ? " (gyengül)" : ""))
-                     .replace("{snow_trend}", diff(d.snowfall_sum) >= 2 ? " (vastagszik)" : (diff(d.snowfall_sum) <= -2 ? " (olvad)" : ""));
+           msg = msg.replace("{temp}", Math.round(d.temperature_2m_min[idx]))
+         .replace("{wind}", Math.round(d.wind_gusts_10m_max[idx]))
+         .replace("{rain}", Math.round(d.precipitation_sum[idx]))
+         .replace("{days}", dryDays)
+         .replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
+         .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
+         .replace("{temp_trend}", diff(d.temperature_2m_min) <= -2.5 ? " (további lehűlés várható)" : (diff(d.temperature_2m_min) >= 2.5 ? " (további melegedés várható)" : ""))
+         .replace("{wind_trend}", diff(d.wind_gusts_10m_max) >= 10 ? " (további erősödés várható)" : (diff(d.wind_gusts_10m_max) <= -10 ? " (csendesedés várható)" : ""))
+         .replace("{rain_trend}", diff(d.precipitation_sum) >= 5 ? " (intenzívebbé válhat)" : (diff(d.precipitation_sum) <= -5 ? " (gyengülés várható)" : ""))
+         .replace("{snow_trend}", diff(d.snowfall_sum) >= 2 ? " (további havazás várható)" : (diff(d.snowfall_sum) <= -2 ? " (hamarosan eláll/gyengül)" : ""));
 
             if (msg.includes("{next_rain}")) {
                 const nIdx = d.precipitation_sum.slice(idx + 1).findIndex(p => p >= 1);
@@ -238,3 +238,4 @@
     document.head.appendChild(fontLink);
     init();
 })();
+
