@@ -6,7 +6,7 @@
     "type": "alert",
     "category": "weather",
     "conditions": { "wind_gusts_min": 50 },
-    "message": "Erős, {wind} km/h-ás széllökések várhatók{wind_trend}. Rögzítsd a kerti eszközöket és a napernyőket!"
+    "message": "Erős, {wind} km/h-ás széllökések várhatók {wind_trend}. Rögzítsd a kerti eszközöket és a napernyőket!"
   },
   {
     "_comment": "2.",
@@ -15,7 +15,7 @@
     "type": "alert",
     "category": "weather",
     "conditions": { "rain_min": 15 },
-    "message": "Intenzív esőzés várható rövid idő alatt! Akár {rain} mm is eshet{rain_trend}. Ellenőrizd a vízelvezetőket!"
+    "message": "Intenzív esőzés várható rövid idő alatt! Akár {rain} mm is eshet {rain_trend}. Ellenőrizd a vízelvezetőket!"
   },
   {
     "_comment": "3.",
@@ -27,7 +27,7 @@
     "category": "weather",
     "seasons": [ { "start": "10-15", "end": "04-15" } ],
     "conditions": { "temp_min_below": -5 },
-    "message": "Beköszöntött a csípős idő! Éjszaka {temp}°C köré hűl a levegő{temp_trend}."
+    "message": "Beköszöntött a csípős idő! Éjszaka {temp}°C köré hűl a levegő {temp_trend}."
   },
   {
     "_comment": "4.",
@@ -39,7 +39,7 @@
     "category": "weather",
     "seasons": [ { "start": "11-01", "end": "03-15" } ],
     "conditions": { "temp_min_below": -10 },
-    "message": "Erős fagyok várhatók ({temp}°C){temp_trend}! Ellenőrizd az érzékenyebb növények takarását!"
+    "message": "Erős fagyok várhatók ({temp}°C) {temp_trend}! Ellenőrizd az érzékenyebb növények takarását!"
   },
   {
     "_comment": "5.",
@@ -81,7 +81,7 @@
     "type": "alert",
     "category": "weather",
     "conditions": { "snow_min_any": 5 },
-    "message": "Jelentős friss hó esett ({snow} cm){snow_trend}! Rázd le a havat az örökzöldekről, mielőtt letörnek az ágak!"
+    "message": "Jelentős friss hó esett ({snow} cm) {snow_trend}! Rázd le a havat az örökzöldekről, mielőtt letörnek az ágak!"
   },
   {
     "_comment": "9.",
@@ -350,3 +350,4 @@
     "message": "Tökéletes, szélcsendes este a kerti kikapcsolódáshoz. Élvezd a kerted gyümölcsét!"
   }
 ]
+
