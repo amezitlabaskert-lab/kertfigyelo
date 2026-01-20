@@ -25,7 +25,7 @@
     const styleSheet = document.createElement("style");
     styleSheet.textContent = `
         @keyframes pulse-invitation { 0% { transform: scale(1); } 70% { transform: scale(1.02); } 100% { transform: scale(1); } }
-        #kertfigyelo { width: 300px; text-align: left; background: white; border: 1px solid #eee; font-family: 'Plus Jakarta Sans', sans-serif; }
+        #kertfigyelo { width: 300px; text-align: left; background: white; font-family: 'Plus Jakarta Sans', sans-serif; }
         .garden-main-card { padding: 18px; display: flex; flex-direction: column; min-height: 480px; user-select: none; }
         .garden-title { font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; text-align: center; margin: 5px 0 12px 0; color: #1a1a1a; line-height: 1.1; }
         .section-title { font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #64748b; }
@@ -238,4 +238,5 @@
     document.head.appendChild(fontLink);
     init();
 })();
+
 
