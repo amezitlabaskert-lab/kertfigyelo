@@ -47,7 +47,7 @@
         .time-warning { background: #ea580c; }
         .time-soon { background: #64748b; }
         .garden-footer { text-align: center; font-size: 10px; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); opacity: 0.6; }
-        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; font-weight: 800; border: none; background: linear-gradient(270deg, #475569, #8693a4, #475569); background-size: 200% 200%; color: white; animation: pulse-invitation 4s ease infinite; text-transform: uppercase; }
+        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; font-weight: 800; border: none; background: linear-gradient(270deg, #346080, #6691b3, #346080); background-size: 200% 200%; color: white; animation: pulse-invitation 8s ease infinite; text-transform: uppercase; }
         .refresh-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #cbd5e1; cursor: pointer; padding: 5px; z-index: 10; transition: color 0.3s; display: flex; align-items: center; justify-content: center; } .refresh-btn:hover { color: #64748b; } .refresh-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     `;
     document.head.appendChild(styleSheet);
@@ -238,6 +238,7 @@
     document.head.appendChild(fontLink);
     init();
 })();
+
 
 
 
