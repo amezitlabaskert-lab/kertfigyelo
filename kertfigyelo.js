@@ -54,18 +54,24 @@
 
     const noon = d => new Date(d).setHours(12,0,0,0);
 
-// 1. HŐMÉRSÉKLET TREND (Valóság-szűrővel)
+function processMessage(msg, weather, dryDays, targetIdx) {
+    if (!msg || !weather?.daily) return "";
+    try {
+        const d = weather.daily, idx = targetIdx || 7;
+        const diffFn = (arr) => (arr[idx] || 0) - (arr[idx-1] || 0);
+
+        // 1. HŐMÉRSÉKLET TREND (Valóság-szűrővel)
         const tMin = Math.round(d.temperature_2m_min[idx]);
         const tDiff = diffFn(d.temperature_2m_min);
         let tTrend = "";
         if (Math.abs(tDiff) >= 2.5) {
-            if (tDiff > 0) { // MELEGEDÉS IRÁNY
+            if (tDiff > 0) { // MELEGEDÉS
                 if (tMin <= -10) tTrend = " (marad a kemény fagy)";
                 else if (tMin <= -5) tTrend = " (marad a fagyos idő)";
                 else if (tMin < 0) tTrend = " (enyhülés kezdődik)";
                 else if (tMin > 25) tTrend = " (további hőség várható)";
                 else tTrend = " (melegedés várható)";
-            } else { // LEHŰLÉS IRÁNY
+            } else { // LEHŰLÉS
                 if (tMin <= -10) tTrend = " (fokozódó, kemény fagy)";
                 else if (tMin <= -5) tTrend = " (erősödő fagy jön)";
                 else if (tMin > 20) tTrend = " (enyhülés a hőségben)";
@@ -73,7 +79,7 @@
             }
         }
 
-        // 2. SZÉL TREND (Permetezés-biztos logika)
+        // 2. SZÉL TREND (Permetezés-biztos finomítással)
         const wGust = Math.round(d.wind_gusts_10m_max[idx]);
         const wDiff = diffFn(d.wind_gusts_10m_max);
         let wTrend = "";
@@ -81,12 +87,12 @@
             if (wDiff > 0) {
                 wTrend = wGust > 40 ? " (további erősödés várható)" : " (élénkülő szél)";
             } else {
-                // Ha csökkenés után is 25 felett marad, akkor még fújni fog
+                // Itt a javítás: ha csökken is, de még erős, jelezzük!
                 wTrend = wGust > 25 ? " (mérséklődő szél, de élénk marad)" : " (csendesedés várható, eláll a szél)";
             }
         }
 
-        // 3. ESŐ TREND
+        // 3. ESŐ TREND (Szünet vs. Elállás szűrővel)
         const rSum = d.precipitation_sum[idx];
         const rDiff = diffFn(d.precipitation_sum);
         let rTrend = "";
@@ -103,6 +109,27 @@
             if (sDiff > 0) sTrend = " (erősödő havazás)";
             else sTrend = sSum < 1 ? " (hamarosan eláll)" : " (gyengülő havazás)";
         }
+
+        // PLACEHOLDER CSERÉK
+        msg = msg.replace("{temp}", tMin)
+            .replace("{wind}", wGust)
+            .replace("{rain}", Math.round(rSum))
+            .replace("{days}", dryDays)
+            .replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
+            .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
+            .replace("{temp_trend}", tTrend)
+            .replace("{wind_trend}", wTrend)
+            .replace("{rain_trend}", rTrend)
+            .replace("{snow_trend}", sTrend);
+
+        if (msg.includes("{next_rain}")) {
+            const nIdx = d.precipitation_sum.slice(idx + 1).findIndex(p => p >= 1);
+            msg = msg.replace("{next_rain}", nIdx !== -1 ? `Eső: ${new Date(d.time[idx+1+nIdx]).toLocaleDateString('hu-HU',{weekday:'long'})} (${Math.round(d.precipitation_sum[idx+1+nIdx])}mm).` : "Nincs eső a kilátásban.");
+        }
+    } catch(e) { console.warn("UX/Trend hiba:", e); }
+    
+    return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
+}
 
     // LOGIKAI MOTOR
     function checkCondition(weather, idx, key, val, dryDays) {
@@ -262,6 +289,7 @@
     document.head.appendChild(fontLink);
     init();
 })();
+
 
 
 
