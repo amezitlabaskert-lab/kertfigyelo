@@ -24,7 +24,7 @@
     // STÍLUSOK
     const styleSheet = document.createElement("style");
     styleSheet.textContent = `
-        @keyframes pulse-invitation { 0% { transform: scale(1); } 70% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        @keyframes pulse-invitation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         #kertfigyelo { width: 300px; text-align: left; background: white; font-family: 'Plus Jakarta Sans', sans-serif; }
         .garden-main-card { padding: 18px; display: flex; flex-direction: column; min-height: 480px; user-select: none; }
         .garden-title { font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; text-align: center; margin: 5px 0 12px 0; color: #1a1a1a; line-height: 1.1; }
@@ -47,7 +47,7 @@
         .time-warning { background: #ea580c; }
         .time-soon { background: #64748b; }
         .garden-footer { text-align: center; font-size: 10px; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); opacity: 0.6; }
-        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; font-weight: 800; border: none; background: #475569; color: white; animation: pulse-invitation 3s infinite; text-transform: uppercase; }
+        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; font-weight: 800; border: none; background: linear-gradient(270deg, #475569, #8693a4, #475569); background-size: 200% 200%; color: white; animation: pulse-invitation 4s ease infinite; text-transform: uppercase; }
         .refresh-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #cbd5e1; cursor: pointer; padding: 5px; z-index: 10; transition: color 0.3s; display: flex; align-items: center; justify-content: center; } .refresh-btn:hover { color: #64748b; } .refresh-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     `;
     document.head.appendChild(styleSheet);
@@ -238,6 +238,7 @@
     document.head.appendChild(fontLink);
     init();
 })();
+
 
 
 
