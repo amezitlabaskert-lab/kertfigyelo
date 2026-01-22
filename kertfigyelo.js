@@ -1,166 +1,169 @@
-(async function() {
-    const CACHE_VERSION = 'v6.9.2'; 
-    const RAIN_THRESHOLD = 8;
+// Google Sites kompatibilitási réteg
+window.Eb = window.Eb || {};
+window.Eb.Ja = {
+    init: function() {
+        this.run();
+    },
+    run: async function() {
+        const CACHE_VERSION = 'v6.9.7'; 
+        const RAIN_THRESHOLD = 8;
 
-    const memStore = {};
-    const safeStorage = {
-        getItem: (k) => { try { return localStorage.getItem(k) || memStore[k]; } catch(e) { return memStore[k]; } },
-        setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) { } memStore[k] = v; },
-        removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) { } delete memStore[k]; }
-    };
+        // Golyóálló tároló a Tracking Prevention ellen
+        const memStore = {};
+        const safeStorage = {
+            getItem: (k) => { try { return localStorage.getItem(k) || memStore[k]; } catch(e) { return memStore[k]; } },
+            setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) { } memStore[k] = v; },
+            removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) { } delete memStore[k]; }
+        };
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('lat') && urlParams.has('lon')) {
-        const pLat = parseFloat(urlParams.get('lat')), pLon = parseFloat(urlParams.get('lon'));
-        if (!isNaN(pLat) && !isNaN(pLon) && pLat > 45.7 && pLat < 48.6 && pLon > 16.1 && pLon < 22.9) {
-            safeStorage.setItem('garden-lat', pLat);
-            safeStorage.setItem('garden-lon', pLon);
-            safeStorage.removeItem('garden-weather-cache');
+        // URL paraméterek kezelése
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('lat') && urlParams.has('lon')) {
+            const pLat = parseFloat(urlParams.get('lat')), pLon = parseFloat(urlParams.get('lon'));
+            if (!isNaN(pLat) && !isNaN(pLon) && pLat > 45.7 && pLat < 48.6 && pLon > 16.1 && pLon < 22.9) {
+                safeStorage.setItem('garden-lat', pLat);
+                safeStorage.setItem('garden-lon', pLon);
+                safeStorage.removeItem('garden-weather-cache');
+            }
         }
-    }
 
-    const styleSheet = document.createElement("style");
-    styleSheet.textContent = `
-        @keyframes pulse-invitation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        #kertfigyelo { width: 300px; text-align: left; background: white; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .garden-main-card { padding: 18px; display: flex; flex-direction: column; min-height: 480px; user-select: none; }
-        .garden-title { font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; text-align: center; margin: 5px 0 12px 0; color: #1a1a1a; line-height: 1.1; }
-        .section-title { font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #64748b; }
-        .carousel-wrapper { position: relative; height: 140px; margin-bottom: 5px; overflow: hidden; }
-        .carousel-item { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition: opacity 1.2s ease-in-out; display: flex; flex-direction: column; justify-content: center; }
-        .carousel-item.active { opacity: 1; visibility: visible; }
-        .card-container { position: relative; padding-left: 14px; box-sizing: border-box; }
-        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
-        .card-type-alert { background: #b91c1c; }
-        .card-type-window { background: #2d6a4f; }
-        .card-type-info { background: #6691b3; }
-        .event-name { font-weight: 800; font-size: 16px; margin-bottom: 2px; color: #1e293b; line-height: 1.2; }
-        .event-range { font-size: 11px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; color: #64748b; }
-        .event-msg { font-size: 14px; line-height: 1.45; color: #334155; }
-        .time-badge { display: inline-block; padding: 2px 6px; font-size: 10px; font-weight: 800; border-radius: 3px; margin-right: 5px; color: #fff; vertical-align: middle; }
-        .type-szezon { background: #1e293b; }
-        .type-szemle { background: #0891b2; }
-        .time-urgent { background: #b91c1c; }
-        .time-warning { background: #ea580c; }
-        .time-soon { background: #64748b; }
-        .garden-footer { text-align: center; font-size: 10px; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); opacity: 0.6; }
-        .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; font-weight: 800; border: none; background: linear-gradient(270deg, #346080, #6691b3, #346080); background-size: 200% 200%; color: white; animation: pulse-invitation 8s ease infinite; text-transform: uppercase; }
-        .refresh-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #cbd5e1; cursor: pointer; padding: 5px; z-index: 10; transition: color 0.3s; display: flex; align-items: center; justify-content: center; } .refresh-btn:hover { color: #64748b; } .refresh-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-    `;
-    document.head.appendChild(styleSheet);
+        const styleSheet = document.createElement("style");
+        styleSheet.textContent = `
+            @keyframes pulse-invitation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+            #kertfigyelo { width: 300px; text-align: left; background: white; font-family: 'Plus Jakarta Sans', sans-serif; }
+            .garden-main-card { padding: 18px; display: flex; flex-direction: column; min-height: 480px; user-select: none; }
+            .garden-title { font-family: 'Dancing Script', cursive; font-size: 3.6em; font-weight: 700; text-align: center; margin: 5px 0 12px 0; color: #1a1a1a; line-height: 1.1; }
+            .section-title { font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #64748b; }
+            .carousel-wrapper { position: relative; height: 140px; margin-bottom: 5px; overflow: hidden; }
+            .carousel-item { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition: opacity 1.2s ease-in-out; display: flex; flex-direction: column; justify-content: center; }
+            .carousel-item.active { opacity: 1; visibility: visible; }
+            .card-container { position: relative; padding-left: 14px; box-sizing: border-box; }
+            .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+            .card-type-alert { background: #b91c1c; }
+            .card-type-window { background: #2d6a4f; }
+            .card-type-info { background: #6691b3; }
+            .event-name { font-weight: 800; font-size: 16px; margin-bottom: 2px; color: #1e293b; line-height: 1.2; }
+            .event-range { font-size: 11px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; color: #64748b; }
+            .event-msg { font-size: 14px; line-height: 1.45; color: #334155; }
+            .time-badge { display: inline-block; padding: 2px 6px; font-size: 10px; font-weight: 800; border-radius: 3px; margin-right: 5px; color: #fff; vertical-align: middle; }
+            .type-szezon { background: #1e293b; }
+            .type-szemle { background: #0891b2; }
+            .time-urgent { background: #b91c1c; }
+            .time-warning { background: #ea580c; }
+            .time-soon { background: #64748b; }
+            .garden-footer { text-align: center; font-size: 10px; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); opacity: 0.6; }
+            .loc-btn { width: 100%; cursor: pointer; padding: 10px; font-size: 10px; font-weight: 800; border: none; background: linear-gradient(270deg, #346080, #6691b3, #346080); background-size: 200% 200%; color: white; animation: pulse-invitation 8s ease infinite; text-transform: uppercase; }
+            .refresh-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #cbd5e1; cursor: pointer; padding: 5px; z-index: 10; transition: color 0.3s; display: flex; align-items: center; justify-content: center; } .refresh-btn:hover { color: #64748b; } .refresh-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        `;
+        document.head.appendChild(styleSheet);
 
-    const noon = d => new Date(d).setHours(12,0,0,0);
+        const noon = d => new Date(d).setHours(12,0,0,0);
 
-    function processMessage(msg, weather, dryDays, targetIdx) {
-        if (!msg || !weather?.daily) return "";
-        try {
-            const d = weather.daily, idx = targetIdx || 7;
-            const diffFn = (arr) => (arr[idx] || 0) - (arr[idx-1] || 0);
-
-            const tMin = Math.round(d.temperature_2m_min[idx]);
-            const tDiff = diffFn(d.temperature_2m_min);
-            let tTrend = "";
-            if (Math.abs(tDiff) >= 2.5) {
-                if (tDiff > 0) {
-                    if (tMin <= -10) tTrend = " (marad a kemény fagy)";
-                    else if (tMin <= -5) tTrend = " (marad a fagyos idő)";
-                    else if (tMin < 0) tTrend = " (enyhülés kezdődik)";
-                    else if (tMin > 25) tTrend = " (további hőség várható)";
-                    else tTrend = " (melegedés várható)";
-                } else {
-                    if (tMin <= -10) tTrend = " (fokozódó, kemény fagy)";
-                    else if (tMin <= -5) tTrend = " (erősödő fagy jön)";
-                    else if (tMin > 20) tTrend = " (enyhülés a hőségben)";
-                    else tTrend = " (lehűlés jön)";
+        function processMessage(msg, weather, dryDays, targetIdx) {
+            if (!msg || !weather?.daily) return "";
+            try {
+                const d = weather.daily, idx = targetIdx || 7;
+                const diffFn = (arr) => (arr[idx] || 0) - (arr[idx-1] || 0);
+                const tMin = Math.round(d.temperature_2m_min[idx]);
+                const tDiff = diffFn(d.temperature_2m_min);
+                let tTrend = "";
+                if (Math.abs(tDiff) >= 2.5) {
+                    if (tDiff > 0) {
+                        if (tMin <= -10) tTrend = " (marad a kemény fagy)";
+                        else if (tMin <= -5) tTrend = " (marad a fagyos idő)";
+                        else if (tMin < 0) tTrend = " (enyhülés kezdődik)";
+                        else if (tMin > 25) tTrend = " (további hőség várható)";
+                        else tTrend = " (melegedés várható)";
+                    } else {
+                        if (tMin <= -10) tTrend = " (fokozódó, kemény fagy)";
+                        else if (tMin <= -5) tTrend = " (erősödő fagy jön)";
+                        else if (tMin > 20) tTrend = " (enyhülés a hőségben)";
+                        else tTrend = " (lehűlés jön)";
+                    }
                 }
-            }
+                const wGust = Math.round(d.wind_gusts_10m_max[idx]);
+                const wDiff = diffFn(d.wind_gusts_10m_max);
+                let wTrend = "";
+                if (Math.abs(wDiff) >= 10) {
+                    wTrend = wDiff > 0 ? (wGust > 40 ? " (további erősödés várható)" : " (élénkülő szél)") : (wGust > 25 ? " (mérséklődő szél, de élénk marad)" : " (csendesedés várható, eláll a szél)");
+                }
+                const rSum = d.precipitation_sum[idx];
+                const rDiff = diffFn(d.precipitation_sum);
+                let rTrend = "";
+                if (Math.abs(rDiff) >= 5) {
+                    rTrend = rDiff > 0 ? " (intenzívebb eső jön)" : (rSum < 3 ? " (csendesedő eső, hamarosan eláll)" : " (gyengülő esőzés)");
+                }
+                const sSum = d.snowfall_sum[idx];
+                const sDiff = diffFn(d.snowfall_sum);
+                let sTrend = "";
+                if (Math.abs(sDiff) >= 2) {
+                    sTrend = sDiff > 0 ? " (erősödő havazás)" : (sSum < 1 ? " (hamarosan eláll)" : " (gyengülő havazás)");
+                }
+                msg = msg.replace("{temp}", tMin).replace("{wind}", wGust).replace("{rain}", Math.round(rSum))
+                         .replace("{days}", dryDays).replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
+                         .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
+                         .replace("{temp_trend}", tTrend).replace("{wind_trend}", wTrend).replace("{rain_trend}", rTrend).replace("{snow_trend}", sTrend);
 
-            const wGust = Math.round(d.wind_gusts_10m_max[idx]);
-            const wDiff = diffFn(d.wind_gusts_10m_max);
-            let wTrend = "";
-            if (Math.abs(wDiff) >= 10) {
-                wTrend = wDiff > 0 ? (wGust > 40 ? " (további erősödés várható)" : " (élénkülő szél)") : (wGust > 25 ? " (mérséklődő szél, de élénk marad)" : " (csendesedés várható, eláll a szél)");
-            }
+                if (msg.includes("{next_rain}")) {
+                    const nIdx = d.precipitation_sum.slice(idx + 1).findIndex(p => p >= 1);
+                    msg = msg.replace("{next_rain}", nIdx !== -1 ? `Eső: ${new Date(d.time[idx+1+nIdx]).toLocaleDateString('hu-HU',{weekday:'long'})} (${Math.round(d.precipitation_sum[idx+1+nIdx])}mm).` : "Nincs eső a kilátásban.");
+                }
+            } catch(e) { console.warn("UX/Trend hiba:", e); }
+            return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
+        }
 
-            const rSum = d.precipitation_sum[idx];
-            const rDiff = diffFn(d.precipitation_sum);
-            let rTrend = "";
-            if (Math.abs(rDiff) >= 5) {
-                rTrend = rDiff > 0 ? " (intenzívebb eső jön)" : (rSum < 3 ? " (csendesedő eső, hamarosan eláll)" : " (gyengülő esőzés)");
-            }
-
-            const sSum = d.snowfall_sum[idx];
-            const sDiff = diffFn(d.snowfall_sum);
-            let sTrend = "";
-            if (Math.abs(sDiff) >= 2) {
-                sTrend = sDiff > 0 ? " (erősödő havazás)" : (sSum < 1 ? " (hamarosan eláll)" : " (gyengülő havazás)");
-            }
-
-            msg = msg.replace("{temp}", tMin).replace("{wind}", wGust).replace("{rain}", Math.round(rSum))
-                     .replace("{days}", dryDays).replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
-                     .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
-                     .replace("{temp_trend}", tTrend).replace("{wind_trend}", wTrend).replace("{rain_trend}", rTrend).replace("{snow_trend}", sTrend);
-
-            if (msg.includes("{next_rain}")) {
-                const nIdx = d.precipitation_sum.slice(idx + 1).findIndex(p => p >= 1);
-                msg = msg.replace("{next_rain}", nIdx !== -1 ? `Eső: ${new Date(d.time[idx+1+nIdx]).toLocaleDateString('hu-HU',{weekday:'long'})} (${Math.round(d.precipitation_sum[idx+1+nIdx])}mm).` : "Nincs eső a kilátásban.");
-            }
-        } catch(e) { console.warn("UX/Trend hiba:", e); }
-        return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
-    }
-
-    function checkCondition(weather, idx, key, val, dryDays, isCheck) {
-        const d = weather.daily;
-        if (!d || idx < 0) return false;
-
-        const lookback = isCheck ? 2 : 7;
-        const checkPast = (array, threshold) => array.slice(Math.max(0, idx - lookback), idx + 1).some(v => v >= threshold);
-        
-        if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
-        if (key === 'temp_min_below' || key === 'temp_below') return d.temperature_2m_min[idx] <= val;
-        if (key === 'temp_min_above') return d.temperature_2m_min[idx] >= val;
-        if (key === 'temp_above') return d.temperature_2m_max[idx] >= val;
-        if (key === 'soil_temp_above') return d.soil_temperature_6cm && d.soil_temperature_6cm[idx] >= val;
-        if (key === 'soil_temp_below') return d.soil_temperature_6cm && d.soil_temperature_6cm[idx] <= val;
-        if (key === 'rain_min' || key === 'rain_min_any') return key.endsWith('_any') ? checkPast(d.precipitation_sum, val) : d.precipitation_sum[idx] >= val;
-        if (key === 'rain_max') return d.precipitation_sum[idx] <= val;
-        if (key === 'wind_max') return d.wind_speed_10m_max[idx] <= val;
-        if (key === 'wind_gusts_min' || key === 'wind_gusts_min_any') return key.endsWith('_any') ? checkPast(d.wind_gusts_10m_max, val) : d.wind_gusts_10m_max[idx] >= val;
-        if (key === 'snow_min' || key === 'snow_min_any') return key.endsWith('_any') ? checkPast(d.snowfall_sum, val) : d.snowfall_sum[idx] >= val;
-        if (key === 'days_min') return dryDays >= val;
-        if (key === 'days_max') return dryDays <= val;
-        return false;
-    }
-
-    function checkSustained(weather, dayIdx, rule, dryDays) {
-        const cond = rule.conditions || {};
-        const isCheck = rule.category === 'check';
-        
-        if (isCheck) {
-            for (let i = 0; i <= 1; i++) {
-                let match = true;
-                for (let k in cond) if (!checkCondition(weather, dayIdx-i, k, cond[k], dryDays, true)) { match = false; break; }
-                if (match) return true;
-            }
+        function checkCondition(weather, idx, key, val, dryDays, isCheck) {
+            const d = weather.daily;
+            if (!d || idx < 0) return false;
+            const lookback = isCheck ? 2 : 7;
+            const checkPast = (array, threshold) => array.slice(Math.max(0, idx - lookback), idx + 1).some(v => v >= threshold);
+            if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
+            if (key === 'temp_min_below' || key === 'temp_below') return d.temperature_2m_min[idx] <= val;
+            if (key === 'temp_min_above') return d.temperature_2m_min[idx] >= val;
+            if (key === 'temp_above') return d.temperature_2m_max[idx] >= val;
+            if (key === 'soil_temp_above') return d.soil_temperature_6cm && d.soil_temperature_6cm[idx] >= val;
+            if (key === 'soil_temp_below') return d.soil_temperature_6cm && d.soil_temperature_6cm[idx] <= val;
+            if (key === 'rain_min' || key === 'rain_min_any') return key.endsWith('_any') ? checkPast(d.precipitation_sum, val) : d.precipitation_sum[idx] >= val;
+            if (key === 'rain_max') return d.precipitation_sum[idx] <= val;
+            if (key === 'wind_max') return d.wind_speed_10m_max[idx] <= val;
+            if (key === 'wind_gusts_min' || key === 'wind_gusts_min_any') return key.endsWith('_any') ? checkPast(d.wind_gusts_10m_max, val) : d.wind_gusts_10m_max[idx] >= val;
+            if (key === 'snow_min' || key === 'snow_min_any') return key.endsWith('_any') ? checkPast(d.snowfall_sum, val) : d.snowfall_sum[idx] >= val;
+            if (key === 'days_min') return dryDays >= val;
+            if (key === 'days_max') return dryDays <= val;
             return false;
         }
 
-        const days = (cond.days_min && !cond.temp_above) ? 1 : (cond.days_min || 1);
-        for (const key in cond) {
-            if (key === 'days_min' || key === 'days_max') continue;
-            if (key.endsWith('_any')) {
-                if (!checkCondition(weather, dayIdx, key, cond[key], dryDays, false)) return false;
-            } else {
-                for (let j = 0; j < days; j++) if (!checkCondition(weather, dayIdx-j, key, cond[key], dryDays, false)) return false;
+        function checkSustained(weather, dayIdx, rule, dryDays) {
+            const cond = rule.conditions || {};
+            const isCheck = rule.category === 'check';
+            if (isCheck) {
+                for (let i = 0; i <= 1; i++) {
+                    let match = true;
+                    for (let k in cond) if (!checkCondition(weather, dayIdx-i, k, cond[k], dryDays, true)) { match = false; break; }
+                    if (match) return true;
+                }
+                return false;
             }
+            const days = (cond.days_min && !cond.temp_above) ? 1 : (cond.days_min || 1);
+            for (const key in cond) {
+                if (key === 'days_min' || key === 'days_max') continue;
+                if (key.endsWith('_any')) {
+                    if (!checkCondition(weather, dayIdx, key, cond[key], dryDays, false)) return false;
+                } else {
+                    for (let j = 0; j < days; j++) if (!checkCondition(weather, dayIdx-j, key, cond[key], dryDays, false)) return false;
+                }
+            }
+            return true;
         }
-        return true;
-    }
 
-    async function init() {
+        function renderZone(items, id) {
+            if (!items.length) return `<div class="carousel-wrapper" style="display:flex;align-items:center;justify-content:center;opacity:0.3;font-size:12px;">Nincs aktuális esemény</div>`;
+            return `<div id="${id}-carousel" class="carousel-wrapper">${items.map((item, idx) => `<div class="carousel-item ${idx === 0 ? 'active' : ''}"><div class="card-container"><div class="card-line card-type-${item.type}"></div><div class="event-name">${item.title}</div><div class="event-range">${item.range}</div><div class="event-msg">${item.msg}</div></div></div>`).join('')}</div>`;
+        }
+
         const widgetDiv = document.getElementById('kertfigyelo');
         if (!widgetDiv) return;
-        widgetDiv.innerHTML = `<div style="padding:60px 20px;text-align:center;"><div style="font-size:40px;animation: pulse-invitation 2s infinite;">🌱</div></div>`;
+        widgetDiv.innerHTML = `<div style="padding:60px 20px;text-align:center;"><div style="font-size:40px;animation: pulse-invitation 2s infinite;">🌱</div><div style="margin-top:15px; font-size:14px; color:#64748b; font-weight:700;">A kerted betöltése...</div></div>`;
 
         try {
             let lat = parseFloat(safeStorage.getItem('garden-lat')) || 47.5136;
@@ -170,8 +173,10 @@
             let weather, lastUpdate;
             const cached = safeStorage.getItem('garden-weather-cache');
             if (cached) {
-                const p = JSON.parse(cached);
-                if (p.version === CACHE_VERSION && Date.now() - p.ts < 1800000) { weather = p.data; lastUpdate = new Date(p.ts); }
+                try {
+                    const p = JSON.parse(cached);
+                    if (p.version === CACHE_VERSION && Date.now() - p.ts < 1800000) { weather = p.data; lastUpdate = new Date(p.ts); }
+                } catch(e) { safeStorage.removeItem('garden-weather-cache'); }
             }
 
             if (!weather) {
@@ -198,7 +203,6 @@
 
             const rules = await (await fetch('https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo_esemenyek.json?v=' + Date.now())).json();
             const rawResults = [];
-
             rules.forEach(rule => {
                 let range = null, tIdx = null;
                 for (let i = todayIdx; i < weather.daily.time.length; i++) {
@@ -253,25 +257,23 @@
                         const {latitude: la, longitude: lo} = p.coords;
                         if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { safeStorage.setItem('garden-lat', la); safeStorage.setItem('garden-lon', lo); safeStorage.removeItem('garden-weather-cache'); location.reload(); }
                         else alert("Csak Magyarország területén működik. 🇭🇺");
-                    }, (err) => {
-                        const m = {1:'Engedélyezd a helymeghatározást!', 2:'Nem sikerült beazonosítani.', 3:'Időtúllépés!'};
-                        alert(m[err.code] || 'GPS hiba: ' + err.message);
-                    }, { timeout: 10000 });
+                    }, (err) => { alert('GPS hiba: ' + err.message); }, { timeout: 10000 });
                 }
             };
             const setup = (id, len) => { if (len <= 1) return; const items = document.querySelectorAll(`#${id}-carousel .carousel-item`); let i = 0; setInterval(() => { if(items[i]) items[i].classList.remove('active'); i = (i + 1) % len; if(items[i]) items[i].classList.add('active'); }, 8000); };
             setup('alert', alerts.length); setup('tasks', others.length);
-        } catch(e) { widgetDiv.innerHTML = `<div style="padding:40px;text-align:center;">⚠️ Hiba történt</div>`; }
-    }
+        } catch(e) { 
+            console.error("Widget hiba:", e);
+            widgetDiv.innerHTML = `<div style="padding:40px;text-align:center;">⚠️ Hiba a kerted elérése közben. Próbáld újra!</div>`; 
+        }
 
-    function renderZone(items, id) {
-        if (!items.length) return `<div class="carousel-wrapper" style="display:flex;align-items:center;justify-content:center;opacity:0.3;font-size:12px;">Nincs aktuális esemény</div>`;
-        return `<div id="${id}-carousel" class="carousel-wrapper">${items.map((item, idx) => `<div class="carousel-item ${idx === 0 ? 'active' : ''}"><div class="card-container"><div class="card-line card-type-${item.type}"></div><div class="event-name">${item.title}</div><div class="event-range">${item.range}</div><div class="event-msg">${item.msg}</div></div></div>`).join('')}</div>`;
+        const fontLink = document.createElement('link');
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap';
+        fontLink.rel = 'stylesheet';
+        document.head.appendChild(fontLink);
     }
+};
 
-    const fontLink = document.createElement('link');
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap';
-    fontLink.rel = 'stylesheet';
-    document.head.appendChild(fontLink);
-    init();
-})();
+// Automatikus indítás minden eshetőségre
+if (document.readyState === 'complete') { window.Eb.Ja.init(); }
+else { window.addEventListener('load', () => window.Eb.Ja.init()); }
