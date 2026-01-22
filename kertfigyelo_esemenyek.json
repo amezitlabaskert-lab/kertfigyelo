@@ -79,8 +79,8 @@
     "id": "honyomas-veszely",
     "name": "❄️ Hónyomás riadó",
     "type": "alert",
-    "group": "ho-szemle"
-    "priority": 20
+    "group": "ho-szemle",
+    "priority": 20,
     "category": "check",
     "conditions": { "snow_min_any": 5 },
     "message": "Jelentős friss hó esett ({snow} cm) {snow_trend}! Rázd le a havat az örökzöldekről, mielőtt letörnek az ágak!"
@@ -283,8 +283,8 @@
     "id": "szemle-havazas",
     "name": "🔎 Havazás utáni szemle",
     "type": "info",
-    "group": "ho-szemle"
-    "priority": 10
+    "group": "ho-szemle",
+    "priority": 10,
     "category": "check",
     "conditions": { "snow_min_any": 5 },
     "message": "Hó esett a közelmúltban ({snow} cm). Ellenőrizd a növényeket hónyomás miatt!"
@@ -354,6 +354,7 @@
     "message": "Tökéletes, szélcsendes este a kerti kikapcsolódáshoz. Élvezd a kerted gyümölcsét!"
   }
 ]
+
 
 
 
