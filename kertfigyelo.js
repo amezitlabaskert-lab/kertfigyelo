@@ -1,8 +1,7 @@
 (async function() {
-    const CACHE_VERSION = 'v6.9.1'; 
+    const CACHE_VERSION = 'v6.9.2'; 
     const RAIN_THRESHOLD = 8;
 
-    // 1. STORAGE HIBRID & BIZTONSÁG
     const memStore = {};
     const safeStorage = {
         getItem: (k) => { try { return localStorage.getItem(k) || memStore[k]; } catch(e) { return memStore[k]; } },
@@ -10,7 +9,6 @@
         removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) { } delete memStore[k]; }
     };
 
-    // URL PARAM VALIDÁCIÓ + GEOFENCING
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
         const pLat = parseFloat(urlParams.get('lat')), pLon = parseFloat(urlParams.get('lon'));
@@ -21,7 +19,6 @@
         }
     }
 
-    // STÍLUSOK
     const styleSheet = document.createElement("style");
     styleSheet.textContent = `
         @keyframes pulse-invitation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -54,88 +51,71 @@
 
     const noon = d => new Date(d).setHours(12,0,0,0);
 
-function processMessage(msg, weather, dryDays, targetIdx) {
-    if (!msg || !weather?.daily) return "";
-    try {
-        const d = weather.daily, idx = targetIdx || 7;
-        const diffFn = (arr) => (arr[idx] || 0) - (arr[idx-1] || 0);
+    function processMessage(msg, weather, dryDays, targetIdx) {
+        if (!msg || !weather?.daily) return "";
+        try {
+            const d = weather.daily, idx = targetIdx || 7;
+            const diffFn = (arr) => (arr[idx] || 0) - (arr[idx-1] || 0);
 
-        // 1. HŐMÉRSÉKLET TREND (Valóság-szűrővel)
-        const tMin = Math.round(d.temperature_2m_min[idx]);
-        const tDiff = diffFn(d.temperature_2m_min);
-        let tTrend = "";
-        if (Math.abs(tDiff) >= 2.5) {
-            if (tDiff > 0) { // MELEGEDÉS
-                if (tMin <= -10) tTrend = " (marad a kemény fagy)";
-                else if (tMin <= -5) tTrend = " (marad a fagyos idő)";
-                else if (tMin < 0) tTrend = " (enyhülés kezdődik)";
-                else if (tMin > 25) tTrend = " (további hőség várható)";
-                else tTrend = " (melegedés várható)";
-            } else { // LEHŰLÉS
-                if (tMin <= -10) tTrend = " (fokozódó, kemény fagy)";
-                else if (tMin <= -5) tTrend = " (erősödő fagy jön)";
-                else if (tMin > 20) tTrend = " (enyhülés a hőségben)";
-                else tTrend = " (lehűlés jön)";
+            const tMin = Math.round(d.temperature_2m_min[idx]);
+            const tDiff = diffFn(d.temperature_2m_min);
+            let tTrend = "";
+            if (Math.abs(tDiff) >= 2.5) {
+                if (tDiff > 0) {
+                    if (tMin <= -10) tTrend = " (marad a kemény fagy)";
+                    else if (tMin <= -5) tTrend = " (marad a fagyos idő)";
+                    else if (tMin < 0) tTrend = " (enyhülés kezdődik)";
+                    else if (tMin > 25) tTrend = " (további hőség várható)";
+                    else tTrend = " (melegedés várható)";
+                } else {
+                    if (tMin <= -10) tTrend = " (fokozódó, kemény fagy)";
+                    else if (tMin <= -5) tTrend = " (erősödő fagy jön)";
+                    else if (tMin > 20) tTrend = " (enyhülés a hőségben)";
+                    else tTrend = " (lehűlés jön)";
+                }
             }
-        }
 
-        // 2. SZÉL TREND (Permetezés-biztos finomítással)
-        const wGust = Math.round(d.wind_gusts_10m_max[idx]);
-        const wDiff = diffFn(d.wind_gusts_10m_max);
-        let wTrend = "";
-        if (Math.abs(wDiff) >= 10) {
-            if (wDiff > 0) {
-                wTrend = wGust > 40 ? " (további erősödés várható)" : " (élénkülő szél)";
-            } else {
-                // Itt a javítás: ha csökken is, de még erős, jelezzük!
-                wTrend = wGust > 25 ? " (mérséklődő szél, de élénk marad)" : " (csendesedés várható, eláll a szél)";
+            const wGust = Math.round(d.wind_gusts_10m_max[idx]);
+            const wDiff = diffFn(d.wind_gusts_10m_max);
+            let wTrend = "";
+            if (Math.abs(wDiff) >= 10) {
+                wTrend = wDiff > 0 ? (wGust > 40 ? " (további erősödés várható)" : " (élénkülő szél)") : (wGust > 25 ? " (mérséklődő szél, de élénk marad)" : " (csendesedés várható, eláll a szél)");
             }
-        }
 
-        // 3. ESŐ TREND (Szünet vs. Elállás szűrővel)
-        const rSum = d.precipitation_sum[idx];
-        const rDiff = diffFn(d.precipitation_sum);
-        let rTrend = "";
-        if (Math.abs(rDiff) >= 5) {
-            if (rDiff > 0) rTrend = " (intenzívebb eső jön)";
-            else rTrend = rSum < 3 ? " (csendesedő eső, hamarosan eláll)" : " (gyengülő esőzés)";
-        }
+            const rSum = d.precipitation_sum[idx];
+            const rDiff = diffFn(d.precipitation_sum);
+            let rTrend = "";
+            if (Math.abs(rDiff) >= 5) {
+                rTrend = rDiff > 0 ? " (intenzívebb eső jön)" : (rSum < 3 ? " (csendesedő eső, hamarosan eláll)" : " (gyengülő esőzés)");
+            }
 
-        // 4. HÓ TREND
-        const sSum = d.snowfall_sum[idx];
-        const sDiff = diffFn(d.snowfall_sum);
-        let sTrend = "";
-        if (Math.abs(sDiff) >= 2) {
-            if (sDiff > 0) sTrend = " (erősödő havazás)";
-            else sTrend = sSum < 1 ? " (hamarosan eláll)" : " (gyengülő havazás)";
-        }
+            const sSum = d.snowfall_sum[idx];
+            const sDiff = diffFn(d.snowfall_sum);
+            let sTrend = "";
+            if (Math.abs(sDiff) >= 2) {
+                sTrend = sDiff > 0 ? " (erősödő havazás)" : (sSum < 1 ? " (hamarosan eláll)" : " (gyengülő havazás)");
+            }
 
-        // PLACEHOLDER CSERÉK
-        msg = msg.replace("{temp}", tMin)
-            .replace("{wind}", wGust)
-            .replace("{rain}", Math.round(rSum))
-            .replace("{days}", dryDays)
-            .replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
-            .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
-            .replace("{temp_trend}", tTrend)
-            .replace("{wind_trend}", wTrend)
-            .replace("{rain_trend}", rTrend)
-            .replace("{snow_trend}", sTrend);
+            msg = msg.replace("{temp}", tMin).replace("{wind}", wGust).replace("{rain}", Math.round(rSum))
+                     .replace("{days}", dryDays).replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
+                     .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
+                     .replace("{temp_trend}", tTrend).replace("{wind_trend}", wTrend).replace("{rain_trend}", rTrend).replace("{snow_trend}", sTrend);
 
-        if (msg.includes("{next_rain}")) {
-            const nIdx = d.precipitation_sum.slice(idx + 1).findIndex(p => p >= 1);
-            msg = msg.replace("{next_rain}", nIdx !== -1 ? `Eső: ${new Date(d.time[idx+1+nIdx]).toLocaleDateString('hu-HU',{weekday:'long'})} (${Math.round(d.precipitation_sum[idx+1+nIdx])}mm).` : "Nincs eső a kilátásban.");
-        }
-    } catch(e) { console.warn("UX/Trend hiba:", e); }
-    
-    return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
-}
+            if (msg.includes("{next_rain}")) {
+                const nIdx = d.precipitation_sum.slice(idx + 1).findIndex(p => p >= 1);
+                msg = msg.replace("{next_rain}", nIdx !== -1 ? `Eső: ${new Date(d.time[idx+1+nIdx]).toLocaleDateString('hu-HU',{weekday:'long'})} (${Math.round(d.precipitation_sum[idx+1+nIdx])}mm).` : "Nincs eső a kilátásban.");
+            }
+        } catch(e) { console.warn("UX/Trend hiba:", e); }
+        return msg.split(/([.!?])\s+/).map((s, i, a) => (i % 2 === 0 && s) ? `<span style="display:block; margin-bottom:5px;">${s}${a[i+1] || ""}</span>` : "").join('');
+    }
 
-    // LOGIKAI MOTOR
-    function checkCondition(weather, idx, key, val, dryDays) {
+    function checkCondition(weather, idx, key, val, dryDays, isCheck) {
         const d = weather.daily;
         if (!d || idx < 0) return false;
-        const checkPast = (array, threshold) => array.slice(Math.max(0, idx - 7), idx + 1).some(v => v >= threshold);
+
+        const lookback = isCheck ? 2 : 7;
+        const checkPast = (array, threshold) => array.slice(Math.max(0, idx - lookback), idx + 1).some(v => v >= threshold);
+        
         if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
         if (key === 'temp_min_below' || key === 'temp_below') return d.temperature_2m_min[idx] <= val;
         if (key === 'temp_min_above') return d.temperature_2m_min[idx] >= val;
@@ -154,18 +134,25 @@ function processMessage(msg, weather, dryDays, targetIdx) {
 
     function checkSustained(weather, dayIdx, rule, dryDays) {
         const cond = rule.conditions || {};
-        if (rule.category === 'check') {
+        const isCheck = rule.category === 'check';
+        
+        if (isCheck) {
             for (let i = 0; i <= 1; i++) {
-                let m = true;
-                for (let k in cond) if (!checkCondition(weather, dayIdx-i, k, cond[k], dryDays)) m = false;
-                if (m) return true;
+                let match = true;
+                for (let k in cond) if (!checkCondition(weather, dayIdx-i, k, cond[k], dryDays, true)) { match = false; break; }
+                if (match) return true;
             }
             return false;
         }
+
         const days = (cond.days_min && !cond.temp_above) ? 1 : (cond.days_min || 1);
         for (const key in cond) {
             if (key === 'days_min' || key === 'days_max') continue;
-            for (let j = 0; j < days; j++) if (!checkCondition(weather, dayIdx-j, key, cond[key], dryDays)) return false;
+            if (key.endsWith('_any')) {
+                if (!checkCondition(weather, dayIdx, key, cond[key], dryDays, false)) return false;
+            } else {
+                for (let j = 0; j < days; j++) if (!checkCondition(weather, dayIdx-j, key, cond[key], dryDays, false)) return false;
+            }
         }
         return true;
     }
@@ -173,8 +160,7 @@ function processMessage(msg, weather, dryDays, targetIdx) {
     async function init() {
         const widgetDiv = document.getElementById('kertfigyelo');
         if (!widgetDiv) return;
-
-        widgetDiv.innerHTML = `<div style="padding:60px 20px;text-align:center;"><div style="font-size:40px;animation: pulse-invitation 2s infinite;">🌱</div><div style="margin-top:10px;font-size:12px;color:#64748b;">Kert naplójának megnyitása...</div></div>`;
+        widgetDiv.innerHTML = `<div style="padding:60px 20px;text-align:center;"><div style="font-size:40px;animation: pulse-invitation 2s infinite;">🌱</div></div>`;
 
         try {
             let lat = parseFloat(safeStorage.getItem('garden-lat')) || 47.5136;
@@ -197,7 +183,9 @@ function processMessage(msg, weather, dryDays, targetIdx) {
             }
 
             const todayIdx = 7;
-            if (weather.daily.precipitation_sum[todayIdx] >= RAIN_THRESHOLD) safeStorage.setItem('last_rain_date', weather.daily.time[todayIdx]);
+            if (weather.daily.precipitation_sum[todayIdx] >= RAIN_THRESHOLD) {
+                safeStorage.setItem('last_rain_date', weather.daily.time[todayIdx]);
+            }
             const storedLastRain = safeStorage.getItem('last_rain_date');
             let dryDays = 0;
             if (storedLastRain) {
@@ -245,16 +233,17 @@ function processMessage(msg, weather, dryDays, targetIdx) {
 
             const alerts = filtered.filter(r => r.type === 'alert').map(mapToRes);
             let others = filtered.filter(r => r.type === 'window').map(mapToRes);
-            if (!others.length) others = filtered.filter(r => ['info', 'none'].includes(r.type)).map(mapToRes);
+            if (!others.length) others = filtered.filter(r => ['info', 'none', 'window'].includes(r.type)).map(mapToRes);
 
-            widgetDiv.innerHTML = `<div class="garden-main-card">
-                <div class="garden-title">${isPers ? 'Kertfigyelőm' : 'Kertfigyelő'}</div>
-                <button id="locBtn" class="loc-btn">${isPers ? 'Vissza az alaphoz' : 'Saját kertfigyelőt!'}</button>
-                <button id="refBtn" class="refresh-btn" title="Adatok frissítése"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
-                <div class="section-title">Riasztások</div>${renderZone(alerts, 'alert')}
-                <div class="section-title">Teendők & Info</div>${renderZone(others, 'tasks')}
-                <div class="garden-footer">Helyszín: ${isPers ? 'A kertem' : 'A Mezítlábas Kert bázisa'}<br>Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} | ${CACHE_VERSION}</div>
-            </div>`;
+            widgetDiv.innerHTML = `
+                <div class="garden-main-card">
+                    <div class="garden-title">${isPers ? 'Kertfigyelőm' : 'Kertfigyelő'}</div>
+                    <button id="locBtn" class="loc-btn">${isPers ? 'Vissza az alaphoz' : 'Saját kertfigyelőt!'}</button>
+                    <button id="refBtn" class="refresh-btn"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
+                    <div class="section-title">Riasztások</div>${renderZone(alerts, 'alert')}
+                    <div class="section-title">Teendők & Info</div>${renderZone(others, 'tasks')}
+                    <div class="garden-footer">Helyszín: ${isPers ? 'A kertem' : 'A Mezítlábas Kert bázisa'}<br>Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} | ${CACHE_VERSION}</div>
+                </div>`;
 
             document.getElementById('refBtn').onclick = () => { safeStorage.removeItem('garden-weather-cache'); location.reload(); };
             document.getElementById('locBtn').onclick = () => {
@@ -264,18 +253,15 @@ function processMessage(msg, weather, dryDays, targetIdx) {
                         const {latitude: la, longitude: lo} = p.coords;
                         if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { safeStorage.setItem('garden-lat', la); safeStorage.setItem('garden-lon', lo); safeStorage.removeItem('garden-weather-cache'); location.reload(); }
                         else alert("Csak Magyarország területén működik. 🇭🇺");
-                    }, (err) => { 
-                        const msg = {1:'Engedélyezd a helymeghatározást!', 2:'Nem sikerült beazonosítani a helyzeted.', 3:'Időtúllépés - próbáld újra!'};
-                        alert(msg[err.code] || 'GPS hiba: ' + err.message); 
+                    }, (err) => {
+                        const m = {1:'Engedélyezd a helymeghatározást!', 2:'Nem sikerült beazonosítani.', 3:'Időtúllépés!'};
+                        alert(m[err.code] || 'GPS hiba: ' + err.message);
                     }, { timeout: 10000 });
                 }
             };
             const setup = (id, len) => { if (len <= 1) return; const items = document.querySelectorAll(`#${id}-carousel .carousel-item`); let i = 0; setInterval(() => { if(items[i]) items[i].classList.remove('active'); i = (i + 1) % len; if(items[i]) items[i].classList.add('active'); }, 8000); };
             setup('alert', alerts.length); setup('tasks', others.length);
-        } catch(e) { 
-            console.error(e);
-            widgetDiv.innerHTML = `<div style="padding:40px 20px; text-align:center; background:white;"><p style="color:#b91c1c;">⚠️ Hiba történt</p><button style="padding:8px;cursor:pointer;" onclick="location.reload();">ÚJRAINDÍTÁS</button></div>`;
-        }
+        } catch(e) { widgetDiv.innerHTML = `<div style="padding:40px;text-align:center;">⚠️ Hiba történt</div>`; }
     }
 
     function renderZone(items, id) {
@@ -289,10 +275,3 @@ function processMessage(msg, weather, dryDays, targetIdx) {
     document.head.appendChild(fontLink);
     init();
 })();
-
-
-
-
-
-
-
