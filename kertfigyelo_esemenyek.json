@@ -79,7 +79,7 @@
     "id": "honyomas-veszely",
     "name": "❄️ Hónyomás riadó",
     "type": "alert",
-    "category": "weather",
+    "category": "check",
     "conditions": { "snow_min_any": 5 },
     "message": "Jelentős friss hó esett ({snow} cm) {snow_trend}! Rázd le a havat az örökzöldekről, mielőtt letörnek az ágak!"
   },
@@ -350,4 +350,5 @@
     "message": "Tökéletes, szélcsendes este a kerti kikapcsolódáshoz. Élvezd a kerted gyümölcsét!"
   }
 ]
+
 
