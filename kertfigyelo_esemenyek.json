@@ -282,7 +282,7 @@
     "name": "🔎 Havazás utáni szemle",
     "type": "info",
     "category": "check",
-    "conditions": { "snow_min_any": 1 },
+    "conditions": { "snow_min_any": 5 },
     "message": "Hó esett a közelmúltban ({snow} cm). Ellenőrizd a növényeket hónyomás miatt!"
   },
   {
@@ -350,5 +350,6 @@
     "message": "Tökéletes, szélcsendes este a kerti kikapcsolódáshoz. Élvezd a kerted gyümölcsét!"
   }
 ]
+
 
 
