@@ -1,14 +1,11 @@
 // Google Sites kompatibilitási réteg
 window.Eb = window.Eb || {};
 window.Eb.Ja = {
-    init: function() {
-        this.run();
-    },
+    init: function() { this.run(); },
     run: async function() {
-        const CACHE_VERSION = 'v6.9.7'; 
+        const CACHE_VERSION = 'v6.9.9'; 
         const RAIN_THRESHOLD = 8;
 
-        // Golyóálló tároló a Tracking Prevention ellen
         const memStore = {};
         const safeStorage = {
             getItem: (k) => { try { return localStorage.getItem(k) || memStore[k]; } catch(e) { return memStore[k]; } },
@@ -16,7 +13,6 @@ window.Eb.Ja = {
             removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) { } delete memStore[k]; }
         };
 
-        // URL paraméterek kezelése
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('lat') && urlParams.has('lon')) {
             const pLat = parseFloat(urlParams.get('lat')), pLon = parseFloat(urlParams.get('lon'));
@@ -166,9 +162,11 @@ window.Eb.Ja = {
         widgetDiv.innerHTML = `<div style="padding:60px 20px;text-align:center;"><div style="font-size:40px;animation: pulse-invitation 2s infinite;">🌱</div><div style="margin-top:15px; font-size:14px; color:#64748b; font-weight:700;">A kerted betöltése...</div></div>`;
 
         try {
-            let lat = parseFloat(safeStorage.getItem('garden-lat')) || 47.5136;
-            let lon = parseFloat(safeStorage.getItem('garden-lon')) || 19.3735;
-            let isPers = !!safeStorage.getItem('garden-lat');
+            // Itt a tiszta koordináta logika, ahogy kérted:
+            const _loc = [47.5136, 19.3735];
+            const lat = parseFloat(safeStorage.getItem('garden-lat')) || _loc[0];
+            const lon = parseFloat(safeStorage.getItem('garden-lon')) || _loc[1];
+            const isPers = !!safeStorage.getItem('garden-lat');
 
             let weather, lastUpdate;
             const cached = safeStorage.getItem('garden-weather-cache');
@@ -274,6 +272,5 @@ window.Eb.Ja = {
     }
 };
 
-// Automatikus indítás minden eshetőségre
 if (document.readyState === 'complete') { window.Eb.Ja.init(); }
 else { window.addEventListener('load', () => window.Eb.Ja.init()); }
