@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobil Widget Stack</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* 1. ALAPOK */
+    body { 
+      margin: 0; padding: 0; font-family: sans-serif; 
+      background: transparent; overflow: hidden; 
+    }
+    
+    /* 2. TAB GOMBOK */
+    .card-switch { display: flex; background: transparent; gap: 2px; }
+    .card-switch button { 
+      flex: 1; border: none; padding: 15px 5px; font-weight: bold; font-size: 11px; 
+      text-transform: uppercase; color: #444; cursor: pointer;
+      background: rgba(255, 255, 255, 0.5); transition: 0.3s;
+    }
+    .card-switch button.active { background: white; color: #000; box-shadow: inset 0 -3px 0 #000; }
+
+    /* 3. KÁRTYA TESTE */
+    .card-stack { 
+      background: white; height: 600px; border-radius: 0 0 12px 12px; 
+      box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5); overflow: hidden; position: relative;
+    }
+    .card-item { display: none; height: 100%; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .card-item.active { display: block; }
+    iframe { width: 100%; height: 100%; border: none; display: block; }
+
+    /* 4. TÉMÁK DESIGN (KÉP ALAPJÁN) */
+    .custom-pagelist { margin: 0; padding: 20px; box-sizing: border-box; }
+    .custom-pagelist h2 { 
+      font-family: 'Dancing Script', cursive; font-size: 3.5em; text-align: center; 
+      margin: 10px 0; line-height: 1.4; color: #5a7d9a; /* Kellemes kékes-szürke árnyalat */
+    }
+    .custom-pagelist ul { padding: 0; margin: 0; list-style: none; }
+    .custom-pagelist li a { 
+      display: flex; align-items: center; padding: 12px 15px; font-size: 13px; 
+      text-decoration: none; text-transform: uppercase; font-weight: bold; color: #446078;
+      border-bottom: 1px solid rgba(0,0,0,0.08); letter-spacing: 0.5px;
+    }
+    .custom-pagelist li a::before { 
+      margin-right: 15px; font-size: 1.6em; width: 35px; 
+      display: inline-flex; justify-content: center; 
+    }
+
+    /* Ikonok a beküldött kép alapján */
+    .link-mezitlab::before { content: "🦶🏻"; }
+    .link-alapjai::before { content: "🪏"; }
+    .link-allatbarat::before { content: "🐾"; }
+    .link-igycsinalom::before { content: "💪🏻"; }
+    .link-novenyeim::before { content: "🌷"; }
+    .link-magamrol::before { content: "👒"; }
+  </style>
+</head>
+<body>
+
+  <div class="card-switch">
+    <button onclick="tab('kert')" id="b-kert" class="active">KERTFIGYELŐ</button>
+    <button onclick="tab('ido')" id="b-ido">IDŐJÁRÁS</button>
+    <button onclick="tab('tema')" id="b-tema">TÉMÁK</button>
+  </div>
+
+  <div class="card-stack">
+    <div id="pane-kert" class="card-item active">
+      <iframe src="https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo.html?v=6.9" allow="geolocation"></iframe>
+    </div>
+
+    <div id="pane-ido" class="card-item">
+      <iframe id="ido-frame" src="https://raw.githack.com/amezitlabaskert-lab/idojaras-widget/main/idojaras-widget.html" allow="geolocation"></iframe>
+    </div>
+
+    <div id="pane-tema" class="card-item">
+      <div class="custom-pagelist">
+        <h2>Témák</h2>
+        <ul>
+          <li><a href="/search/label/🦶🏻" target="_top" class="link-mezitlab">A mezítlábas kert</a></li>
+          <li><a href="/search/label/🪏" target="_top" class="link-alapjai">A kertépítés alapjai</a></li>
+          <li><a href="/search/label/🐾" target="_top" class="link-allatbarat">Állatbarát kert</a></li>
+          <li><a href="/search/label/💪🏻" target="_top" class="link-igycsinalom">Így csinálom én</a></li>
+          <li><a href="/p/novenyeim.html" target="_top" class="link-novenyeim">Növényeim</a></li>
+          <li><a href="/p/magamrol.html" target="_top" class="link-magamrol">Magamról</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function tab(id) {
+      document.querySelectorAll('.card-item').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.card-switch button').forEach(b => b.classList.remove('active'));
+      document.getElementById('pane-' + id).classList.add('active');
+      document.getElementById('b-' + id).classList.add('active');
+    }
+
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'GARDEN_LOCATION_CHANGED') {
+        const frame = document.getElementById('ido-frame');
+        if (frame?.contentWindow) frame.contentWindow.postMessage(e.data, '*');
+      }
+    });
+  </script>
+
+</body>
+</html>
