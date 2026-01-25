@@ -3,7 +3,7 @@ window.Eb = window.Eb || {};
 window.Eb.Ja = {
     init: function() { this.run(); },
     run: async function() {
-        const CACHE_VERSION = 'v6.9.9'; 
+        const CACHE_VERSION = 'v7.0'; 
         const RAIN_THRESHOLD = 8;
 
         const memStore = {};
@@ -299,3 +299,4 @@ window.Eb.Ja = {
 
 if (document.readyState === 'complete') { window.Eb.Ja.init(); }
 else { window.addEventListener('load', () => window.Eb.Ja.init()); }
+
