@@ -55,6 +55,20 @@ window.Eb.Ja = {
 
         const noon = d => new Date(d).setHours(12,0,0,0);
 
+        // PostMessage segédfüggvény
+        function notifyLocationChange(lat, lon, isPers) {
+            try {
+                window.parent.postMessage({
+                    type: 'GARDEN_LOCATION_CHANGED',
+                    source: 'kert-widget',
+                    data: { lat: lat, lon: lon, isPers: isPers }
+                }, '*');
+                console.log('📍 Lokáció változás továbbítva:', lat, lon);
+            } catch(e) {
+                console.warn('PostMessage hiba:', e);
+            }
+        }
+
         function processMessage(msg, weather, dryDays, targetIdx) {
             if (!msg || !weather?.daily) return "";
             try {
@@ -162,7 +176,6 @@ window.Eb.Ja = {
         widgetDiv.innerHTML = `<div style="padding:60px 20px;text-align:center;"><div style="font-size:40px;animation: pulse-invitation 2s infinite;">🌱</div><div style="margin-top:15px; font-size:14px; color:#64748b; font-weight:700;">A kerted betöltése...</div></div>`;
 
         try {
-            // Itt a tiszta koordináta logika, ahogy kérted:
             const _loc = [47.5136, 19.3735];
             const lat = parseFloat(safeStorage.getItem('garden-lat')) || _loc[0];
             const lon = parseFloat(safeStorage.getItem('garden-lon')) || _loc[1];
@@ -249,11 +262,23 @@ window.Eb.Ja = {
 
             document.getElementById('refBtn').onclick = () => { safeStorage.removeItem('garden-weather-cache'); location.reload(); };
             document.getElementById('locBtn').onclick = () => {
-                if (isPers) { ['garden-lat','garden-lon','garden-weather-cache','last_rain_date'].forEach(k => safeStorage.removeItem(k)); location.reload(); }
+                if (isPers) { 
+                    // Vissza az alaphoz
+                    ['garden-lat','garden-lon','garden-weather-cache','last_rain_date'].forEach(k => safeStorage.removeItem(k)); 
+                    notifyLocationChange(_loc[0], _loc[1], false);
+                    location.reload(); 
+                }
                 else { 
+                    // Saját lokáció kérése
                     navigator.geolocation.getCurrentPosition(p => {
                         const {latitude: la, longitude: lo} = p.coords;
-                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { safeStorage.setItem('garden-lat', la); safeStorage.setItem('garden-lon', lo); safeStorage.removeItem('garden-weather-cache'); location.reload(); }
+                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { 
+                            safeStorage.setItem('garden-lat', la); 
+                            safeStorage.setItem('garden-lon', lo); 
+                            safeStorage.removeItem('garden-weather-cache'); 
+                            notifyLocationChange(la, lo, true);
+                            location.reload(); 
+                        }
                         else alert("Csak Magyarország területén működik. 🇭🇺");
                     }, (err) => { alert('GPS hiba: ' + err.message); }, { timeout: 10000 });
                 }
