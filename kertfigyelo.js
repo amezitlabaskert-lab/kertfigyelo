@@ -3,8 +3,19 @@ window.Eb = window.Eb || {};
 window.Eb.Ja = {
     init: function() { this.run(); },
     run: async function() {
-        const CACHE_VERSION = 'v7.0'; 
+        const CACHE_VERSION = 'v7.1'; // verzió bumped a javítások miatt
         const RAIN_THRESHOLD = 8;
+        // [FIX 3] Egyszerű HTML-sanitizer: a rules JSON message mezői csak szöveget + {placeholder}-eket tartalmazhatnak,
+        // ezért minden külső szöveget átszűrünk mielőtt innerHTML-be kerülne.
+        function sanitizeText(str) {
+            if (typeof str !== 'string') return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         const memStore = {};
         const safeStorage = {
@@ -109,6 +120,9 @@ window.Eb.Ja = {
                 if (Math.abs(sDiff) >= 2) {
                     sTrend = sDiff > 0 ? " (erősödő havazás)" : (sSum < 1 ? " (hamarosan eláll)" : " (gyengülő havazás)");
                 }
+                // [FIX 3] A msg sanitizálva van mielőtt behelyettesítjük a placeholder-eket,
+                // hogy a szöveg maga ne tartalmazzon HTML-t, de a végeredmény <span>-okba kerülhet.
+                msg = sanitizeText(msg);
                 msg = msg.replace("{temp}", tMin).replace("{wind}", wGust).replace("{rain}", Math.round(rSum))
                          .replace("{days}", dryDays).replace("{soil_temp}", d.soil_temperature_6cm[idx] ? Math.round(d.soil_temperature_6cm[idx]) : "--")
                          .replace("{snow}", Math.round(Math.max(...d.snowfall_sum.slice(Math.max(0, idx-2), idx+1)) * 10) / 10)
@@ -125,7 +139,8 @@ window.Eb.Ja = {
         function checkCondition(weather, idx, key, val, dryDays, isCheck) {
             const d = weather.daily;
             if (!d || idx < 0) return false;
-            const lookback = isCheck ? 2 : 7;
+            // [FIX 1] _any lookback csökkentve 7→2 napra: a régi hó/szél ne riasszon napokkal később
+            const lookback = isCheck ? 2 : 2;
             const checkPast = (array, threshold) => array.slice(Math.max(0, idx - lookback), idx + 1).some(v => v >= threshold);
             if (key === 'temp_max_below') return d.temperature_2m_max[idx] <= val;
             if (key === 'temp_min_below' || key === 'temp_below') return d.temperature_2m_min[idx] <= val;
@@ -138,6 +153,9 @@ window.Eb.Ja = {
             if (key === 'wind_max') return d.wind_speed_10m_max[idx] <= val;
             if (key === 'wind_gusts_min' || key === 'wind_gusts_min_any') return key.endsWith('_any') ? checkPast(d.wind_gusts_10m_max, val) : d.wind_gusts_10m_max[idx] >= val;
             if (key === 'snow_min' || key === 'snow_min_any') return key.endsWith('_any') ? checkPast(d.snowfall_sum, val) : d.snowfall_sum[idx] >= val;
+            // [FIX 2] snow_max implementálva: korábban ismeretlen kulcsként false-t adott vissza,
+            // ezért a téli aszály riasztás (rule 5) soha nem tudott aktiválódni.
+            if (key === 'snow_max') return d.snowfall_sum[idx] <= val;
             if (key === 'days_min') return dryDays >= val;
             if (key === 'days_max') return dryDays <= val;
             return false;
@@ -154,13 +172,18 @@ window.Eb.Ja = {
                 }
                 return false;
             }
-            const days = (cond.days_min && !cond.temp_above) ? 1 : (cond.days_min || 1);
+            // A days_min önmagában az időtartam-számláló (dryDays), nem a weather-loop ismétlése.
+            // Ha van days_min ÉS más feltétel is, a days_min-t a dryDays ellenőrzi, a többi feltételt
+            // csak az aktuális napra vizsgáljuk (days = 1), hogy ne adjunk hozzá véletlenszerű
+            // napismétlést pl. a borókás szabálynál (temp_above + days_min).
+            const hasOnlyDaysCond = Object.keys(cond).every(k => k === 'days_min' || k === 'days_max');
+            const repeatDays = hasOnlyDaysCond ? 1 : (cond.days_min && !cond.temp_above ? 1 : (cond.days_min || 1));
             for (const key in cond) {
                 if (key === 'days_min' || key === 'days_max') continue;
                 if (key.endsWith('_any')) {
                     if (!checkCondition(weather, dayIdx, key, cond[key], dryDays, false)) return false;
                 } else {
-                    for (let j = 0; j < days; j++) if (!checkCondition(weather, dayIdx-j, key, cond[key], dryDays, false)) return false;
+                    for (let j = 0; j < repeatDays; j++) if (!checkCondition(weather, dayIdx-j, key, cond[key], dryDays, false)) return false;
                 }
             }
             return true;
@@ -174,6 +197,9 @@ window.Eb.Ja = {
         const widgetDiv = document.getElementById('kertfigyelo');
         if (!widgetDiv) return;
         widgetDiv.innerHTML = `<div style="padding:60px 20px;text-align:center;"><div style="font-size:40px;animation: pulse-invitation 2s infinite;">🌱</div><div style="margin-top:15px; font-size:14px; color:#64748b; font-weight:700;">A kerted betöltése...</div></div>`;
+
+        // [FIX 5] Carousel interval-ok nyilvántartása, hogy el lehessen takarítani őket
+        const carouselIntervals = [];
 
         try {
             const _loc = [47.5136, 19.3735];
@@ -191,9 +217,22 @@ window.Eb.Ja = {
             }
 
             if (!weather) {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max&hourly=soil_temperature_6cm&past_days=7&timezone=auto&v=${Date.now()}`;
+                // [FIX 4] soil_temperature_6cm: az hourly index nem feltétlenül indul éjfélkor,
+                // ezért a nap közepéhez (12:00) legközelebb eső indexet keressük a dátum alapján.
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max&hourly=soil_temperature_6cm,time&past_days=7&timezone=auto&v=${Date.now()}`;
                 const rawData = await (await fetch(url)).json();
-                rawData.daily.soil_temperature_6cm = rawData.daily.time.map((_, i) => rawData.hourly.soil_temperature_6cm[i * 24 + 12] ?? null);
+                const hourlyTimes = rawData.hourly.time;
+                rawData.daily.soil_temperature_6cm = rawData.daily.time.map(dayStr => {
+                    const noon12 = dayStr + 'T12:00';
+                    // Megkeressük a 12:00-hoz legközelebb eső óránkénti bejegyzést
+                    let bestIdx = -1, bestDiff = Infinity;
+                    for (let h = 0; h < hourlyTimes.length; h++) {
+                        if (!hourlyTimes[h].startsWith(dayStr)) continue;
+                        const diff = Math.abs(new Date(hourlyTimes[h]) - new Date(noon12));
+                        if (diff < bestDiff) { bestDiff = diff; bestIdx = h; }
+                    }
+                    return bestIdx !== -1 ? (rawData.hourly.soil_temperature_6cm[bestIdx] ?? null) : null;
+                });
                 weather = rawData; lastUpdate = new Date();
                 safeStorage.setItem('garden-weather-cache', JSON.stringify({ version: CACHE_VERSION, ts: lastUpdate.getTime(), data: weather }));
             }
@@ -212,7 +251,21 @@ window.Eb.Ja = {
                 dryDays = lastRainIdx === -1 ? 10 : (todayIdx - lastRainIdx);
             }
 
-            const rules = await (await fetch('https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo_esemenyek.json?v=' + Date.now())).json();
+            // [FIX 4b] Rules cache: az esemény-JSON-t is cache-eljük 1 óráig,
+            // hogy ne kelljen minden betöltésnél a GitHub CDN-t hívni.
+            let rules;
+            const rulesCached = safeStorage.getItem('garden-rules-cache');
+            if (rulesCached) {
+                try {
+                    const rp = JSON.parse(rulesCached);
+                    if (rp.version === CACHE_VERSION && Date.now() - rp.ts < 3600000) { rules = rp.data; }
+                } catch(e) { safeStorage.removeItem('garden-rules-cache'); }
+            }
+            if (!rules) {
+                rules = await (await fetch('https://raw.githack.com/amezitlabaskert-lab/kertfigyelo/main/kertfigyelo_esemenyek.json?v=' + Date.now())).json();
+                safeStorage.setItem('garden-rules-cache', JSON.stringify({ version: CACHE_VERSION, ts: Date.now(), data: rules }));
+            }
+
             const rawResults = [];
             rules.forEach(rule => {
                 let range = null, tIdx = null;
@@ -260,34 +313,55 @@ window.Eb.Ja = {
                     <div class="garden-footer">Helyszín: ${isPers ? 'A kertem' : 'A Mezítlábas Kert bázisa'}<br>Frissítve: ${lastUpdate.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} | ${CACHE_VERSION}</div>
                 </div>`;
 
-            document.getElementById('refBtn').onclick = () => { safeStorage.removeItem('garden-weather-cache'); location.reload(); };
+            document.getElementById('refBtn').onclick = () => {
+                safeStorage.removeItem('garden-weather-cache');
+                safeStorage.removeItem('garden-rules-cache');
+                // [FIX 5] Carousel intervalok törlése reload előtt
+                carouselIntervals.forEach(id => clearInterval(id));
+                location.reload();
+            };
             document.getElementById('locBtn').onclick = () => {
-                if (isPers) { 
-                    // Vissza az alaphoz
-                    ['garden-lat','garden-lon','garden-weather-cache','last_rain_date'].forEach(k => safeStorage.removeItem(k)); 
+                if (isPers) {
+                    ['garden-lat','garden-lon','garden-weather-cache','garden-rules-cache','last_rain_date'].forEach(k => safeStorage.removeItem(k));
                     notifyLocationChange(_loc[0], _loc[1], false);
-                    location.reload(); 
+                    carouselIntervals.forEach(id => clearInterval(id));
+                    location.reload();
                 }
-                else { 
-                    // Saját lokáció kérése
+                else {
                     navigator.geolocation.getCurrentPosition(p => {
                         const {latitude: la, longitude: lo} = p.coords;
-                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) { 
-                            safeStorage.setItem('garden-lat', la); 
-                            safeStorage.setItem('garden-lon', lo); 
-                            safeStorage.removeItem('garden-weather-cache'); 
+                        if (la > 45.7 && la < 48.6 && lo > 16.1 && lo < 22.9) {
+                            safeStorage.setItem('garden-lat', la);
+                            safeStorage.setItem('garden-lon', lo);
+                            safeStorage.removeItem('garden-weather-cache');
+                            safeStorage.removeItem('garden-rules-cache');
                             notifyLocationChange(la, lo, true);
-                            location.reload(); 
+                            carouselIntervals.forEach(id => clearInterval(id));
+                            location.reload();
                         }
                         else alert("Csak Magyarország területén működik. 🇭🇺");
                     }, (err) => { alert('GPS hiba: ' + err.message); }, { timeout: 10000 });
                 }
             };
-            const setup = (id, len) => { if (len <= 1) return; const items = document.querySelectorAll(`#${id}-carousel .carousel-item`); let i = 0; setInterval(() => { if(items[i]) items[i].classList.remove('active'); i = (i + 1) % len; if(items[i]) items[i].classList.add('active'); }, 8000); };
-            setup('alert', alerts.length); setup('tasks', others.length);
-        } catch(e) { 
+
+            // [FIX 5] setInterval visszatérési értékét tároljuk, hogy el lehessen takarítani
+            const setup = (id, len) => {
+                if (len <= 1) return;
+                const items = document.querySelectorAll(`#${id}-carousel .carousel-item`);
+                let i = 0;
+                const intervalId = setInterval(() => {
+                    if(items[i]) items[i].classList.remove('active');
+                    i = (i + 1) % len;
+                    if(items[i]) items[i].classList.add('active');
+                }, 8000);
+                carouselIntervals.push(intervalId);
+            };
+            setup('alert', alerts.length);
+            setup('tasks', others.length);
+
+        } catch(e) {
             console.error("Widget hiba:", e);
-            widgetDiv.innerHTML = `<div style="padding:40px;text-align:center;">⚠️ Hiba a kerted elérése közben. Próbáld újra!</div>`; 
+            widgetDiv.innerHTML = `<div style="padding:40px;text-align:center;">⚠️ Hiba a kerted elérése közben. Próbáld újra!</div>`;
         }
 
         const fontLink = document.createElement('link');
@@ -299,4 +373,3 @@ window.Eb.Ja = {
 
 if (document.readyState === 'complete') { window.Eb.Ja.init(); }
 else { window.addEventListener('load', () => window.Eb.Ja.init()); }
-
