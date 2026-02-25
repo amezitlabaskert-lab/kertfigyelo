@@ -219,7 +219,7 @@ window.Eb.Ja = {
             if (!weather) {
                 // [FIX 4] soil_temperature_6cm: az hourly index nem feltétlenül indul éjfélkor,
                 // ezért a nap közepéhez (12:00) legközelebb eső indexet keressük a dátum alapján.
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max&hourly=soil_temperature_6cm,time&past_days=7&timezone=auto&v=${Date.now()}`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_sum,snowfall_sum,precipitation_probability_max&hourly=soil_temperature_6cm&past_days=7&timezone=auto&v=${Date.now()}`;
                 const rawData = await (await fetch(url)).json();
                 const hourlyTimes = rawData.hourly.time;
                 rawData.daily.soil_temperature_6cm = rawData.daily.time.map(dayStr => {
